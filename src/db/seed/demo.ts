@@ -630,17 +630,15 @@ export async function seedDemo(db: Db) {
       .insert(s.templates)
       .values(TEMPLATES.map((tpl) => ({ organizationId, ...tpl })));
 
-    await tx
-      .insert(s.aiIntentSettings)
-      .values(
-        AI_INTENTS.map((a) => ({
-          organizationId,
-          intent: a.intent,
-          label: a.label,
-          mode: a.mode,
-          confidenceThreshold: a.threshold,
-        })),
-      );
+    await tx.insert(s.aiIntentSettings).values(
+      AI_INTENTS.map((a) => ({
+        organizationId,
+        intent: a.intent,
+        label: a.label,
+        mode: a.mode,
+        confidenceThreshold: a.threshold,
+      })),
+    );
 
     await tx.insert(s.integrations).values([
       { organizationId, kind: "mailgun", status: "demo", settings: { region: "EU" } },
@@ -777,14 +775,12 @@ async function seedTicket(
   }
 
   for (const order of d.orders ?? []) {
-    await tx
-      .insert(s.ticketOrders)
-      .values({
-        organizationId,
-        ticketId: ticket.id,
-        orderNumber: order,
-        linkedBy: "system",
-      });
+    await tx.insert(s.ticketOrders).values({
+      organizationId,
+      ticketId: ticket.id,
+      orderNumber: order,
+      linkedBy: "system",
+    });
   }
   for (const tag of d.tags ?? []) {
     await tx

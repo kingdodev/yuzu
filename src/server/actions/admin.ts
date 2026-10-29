@@ -202,15 +202,13 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         .where(eq(s.memberships.userId, userId));
       await t.tx.delete(s.memberShops).where(eq(s.memberShops.userId, userId));
       if (!allShops && shopIds.length > 0) {
-        await t.tx
-          .insert(s.memberShops)
-          .values(
-            shopIds.map((shopId) => ({
-              organizationId: t.organizationId,
-              userId,
-              shopId,
-            })),
-          );
+        await t.tx.insert(s.memberShops).values(
+          shopIds.map((shopId) => ({
+            organizationId: t.organizationId,
+            userId,
+            shopId,
+          })),
+        );
       }
       await audit(t, session, "member_updated", "user", userId, {
         from: before.role,
@@ -401,17 +399,15 @@ export async function addKnowledgeNote(_: FormState, form: FormData): Promise<Fo
       .min(1, "De notitie is leeg")
       .parse(form.get("content"));
     await asAdmin(({ tx, organizationId }) =>
-      tx
-        .insert(s.knowledgeSources)
-        .values({
-          organizationId,
-          shopId,
-          kind: "note",
-          title,
-          contentText,
-          status: "indexed",
-          lastCrawledAt: new Date(),
-        }),
+      tx.insert(s.knowledgeSources).values({
+        organizationId,
+        shopId,
+        kind: "note",
+        title,
+        contentText,
+        status: "indexed",
+        lastCrawledAt: new Date(),
+      }),
     );
   } catch (e) {
     return fail(e);
@@ -433,15 +429,13 @@ export async function uploadKnowledgeFile(
     if (!/\.(pdf|docx|txt|md|csv)$/i.test(file.name))
       throw new Error("Alleen PDF, DOCX, TXT, MD of CSV");
     await asAdmin(({ tx, organizationId }) =>
-      tx
-        .insert(s.knowledgeSources)
-        .values({
-          organizationId,
-          shopId,
-          kind: "upload",
-          title: file.name,
-          status: "pending",
-        }),
+      tx.insert(s.knowledgeSources).values({
+        organizationId,
+        shopId,
+        kind: "upload",
+        title: file.name,
+        status: "pending",
+      }),
     );
   } catch (e) {
     return fail(e);
