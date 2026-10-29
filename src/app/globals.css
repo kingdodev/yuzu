@@ -1,35 +1,200 @@
 @import "tailwindcss";
 
-:root {
-  --background: #fbfaf5;
-  --foreground: #1c1f17;
-  --muted: #5f6655;
-  --accent: #c9d22b;
-  --accent-ink: #3d4210;
-}
+/*
+ * Yuzu — ontwerptokens
+ *
+ * Rustige, koele basis (mineraal en dennengroen) zodat je er een hele dag in
+ * kunt werken. Yuzu-geel is gereserveerd voor wat de AI voor je klaarzet;
+ * daardoor springt een concept er direct uit.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+:root {
+  --bg: #eef1ef;
+  --panel: #ffffff;
+  --panel-sunk: #f6f8f7;
+  --ink: #1d2b26;
+  --ink-soft: #3c4a44;
+  --muted: #66736d;
+  --line: #dce2de;
+  --line-strong: #c6cfca;
+  --pine: #234a3d;
+  --pine-hover: #1a3a30;
+  --pine-tint: #e3ece8;
+  --yuzu: #e6d63b;
+  --yuzu-soft: #fbf7d3;
+  --yuzu-ink: #4a4410;
+  /* Tekst óp yuzu-geel; in beide modi donker. */
+  --on-yuzu: #3a350a;
+  --alert: #b3261e;
+  --alert-tint: #fbe9e7;
+  --note: #fff4e0;
+  --note-line: #efd9a8;
+
+  --shop-nl: #c4560c;
+  --shop-nl-tint: #fdebdc;
+  --shop-be: #2f3532;
+  --shop-be-tint: #e4e8e6;
+  --shop-fr: #23457a;
+  --shop-fr-tint: #dfe8f6;
+  --shop-es: #a3222b;
+  --shop-es-tint: #f9e1e2;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #12140f;
-    --foreground: #eef0e6;
-    --muted: #a4ab97;
-    --accent: #d7df45;
-    --accent-ink: #12140f;
+    --bg: #141917;
+    --panel: #1b2220;
+    --panel-sunk: #171d1b;
+    --ink: #e7ece9;
+    --ink-soft: #c5cec9;
+    --muted: #93a09a;
+    --line: #2b3431;
+    --line-strong: #3a4541;
+    --pine: #8cc5ad;
+    --pine-hover: #a6d6c1;
+    --pine-tint: #22322c;
+    --yuzu: #e6d63b;
+    --yuzu-soft: #2c2a12;
+    --yuzu-ink: #f1e88c;
+    --alert: #f2a59d;
+    --alert-tint: #3a1f1c;
+    --note: #2d2616;
+    --note-line: #4d4126;
+
+    --shop-nl: #f2a36b;
+    --shop-nl-tint: #3a2618;
+    --shop-be: #d3d9d6;
+    --shop-be-tint: #2a302d;
+    --shop-fr: #a3bff0;
+    --shop-fr-tint: #1d2a40;
+    --shop-es: #f1a3a8;
+    --shop-es-tint: #3c1e21;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-sunk: var(--panel-sunk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-pine: var(--pine);
+  --color-pine-hover: var(--pine-hover);
+  --color-pine-tint: var(--pine-tint);
+  --color-yuzu: var(--yuzu);
+  --color-yuzu-soft: var(--yuzu-soft);
+  --color-yuzu-ink: var(--yuzu-ink);
+  --color-on-yuzu: var(--on-yuzu);
+  --color-alert: var(--alert);
+  --color-alert-tint: var(--alert-tint);
+  --color-note: var(--note);
+  --color-note-line: var(--note-line);
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  font-size: 15px;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
+  font-feature-settings: "tnum" 0;
+}
+
+/* Getallen in tabellen en lijsten netjes onder elkaar. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Formuliervelden en knoppen, één keer goed gedaan. In een laag, zodat
+   Tailwind-utilities (bijv. w-auto) ze kunnen overschrijven. */
+@layer components {
+  .field {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+    color: var(--ink);
+    font: inherit;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--pine);
+    box-shadow: 0 0 0 3px var(--pine-tint);
+  }
+  textarea.field {
+    line-height: 1.55;
+    resize: vertical;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 8px;
+    padding: 0.45rem 0.85rem;
+    font-weight: 560;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--pine);
+    color: var(--panel);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--pine-hover);
+  }
+  .btn-secondary {
+    background: var(--panel);
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--ink-soft);
+  }
+  .btn-quiet {
+    background: transparent;
+    color: var(--muted);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--panel-sunk);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Inbox op kleine schermen: lijst óf ticket. */
+@media (max-width: 1023px) {
+  .inbox:has([data-ticket]) .inbox-list {
+    display: none;
+  }
+  .inbox:not(:has([data-ticket])) .inbox-detail {
+    display: none;
+  }
 }

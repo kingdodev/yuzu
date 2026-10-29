@@ -29,7 +29,11 @@ afterAll(async () => close());
 async function newTicket(subject = "Waar blijft mijn bestelling?") {
   return withTenant(db, seed.org.id, async (t) => {
     const contact = await upsertContact(t, { email: "Jan@Example.com", name: "Jan" });
-    return createTicket(t, { shopId: seed.shop.id, contactId: contact.id, subject }, { type: "system" });
+    return createTicket(
+      t,
+      { shopId: seed.shop.id, contactId: contact.id, subject },
+      { type: "system" },
+    );
   });
 }
 
@@ -119,7 +123,10 @@ describe("statuswijzigingen", () => {
 
 describe("regels voor de levenscyclus", () => {
   it("heropent bij een reactie van de klant", () => {
-    expect(onInboundMessage("pending_customer")).toEqual({ action: "reopen", status: "open" });
+    expect(onInboundMessage("pending_customer")).toEqual({
+      action: "reopen",
+      status: "open",
+    });
     expect(onInboundMessage("solved")).toEqual({ action: "reopen", status: "open" });
     expect(onInboundMessage("open")).toEqual({ action: "keep", status: "open" });
   });

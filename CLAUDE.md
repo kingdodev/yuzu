@@ -52,6 +52,26 @@ Magento-webshops". Lees ook AGENTS.md (Next.js-specifieke regels).
 - Elke wijziging met tests. `npm run typecheck && npm run lint && npm test &&
   npm run build` moet slagen voordat iets naar main gaat.
 
+## Demo-omgeving
+
+Zonder `DATABASE_URL` draait Yuzu op PGlite in `.data/demo` met voorbeelddata
+(`src/db/seed/demo.ts`), en is de ingelogde gebruiker altijd Frank (eigenaar).
+Magento komt dan uit `src/integrations/magento/demo.ts`. De echte koppelingen
+implementeren dezelfde interfaces; de schermen hoeven daarvoor niet te
+veranderen.
+
+## Structuur
+
+- `src/app/(app)/inbox` — inbox en ticketscherm
+- `src/app/(app)/beheer` — beheerpagina's (alleen eigenaar en beheerder)
+- `src/server/` — data ophalen (`inbox.ts`, `admin.ts`, `reports.ts`),
+  sessie en rechten (`session.ts`), server actions (`actions/`)
+- `src/components/` — interface; ontwerptokens in `src/app/globals.css`.
+  Yuzu-geel is alleen voor wat de AI klaarzet.
+
+Next.js 16 met Cache Components: alles wat data of de URL leest, staat binnen
+een `<Suspense>`. Gebruik geen `usePathname` buiten een Suspense-grens.
+
 ## Handige commando's
 
 - `npm run dev` — lokaal draaien

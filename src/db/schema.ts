@@ -42,13 +42,7 @@ const organizationId = () =>
 // Enums
 // ---------------------------------------------------------------------------
 
-export const roleEnum = pgEnum("role", [
-  "owner",
-  "admin",
-  "teamlead",
-  "agent",
-  "viewer",
-]);
+export const roleEnum = pgEnum("role", ["owner", "admin", "teamlead", "agent", "viewer"]);
 
 export const languageEnum = pgEnum("language", ["nl", "fr", "es", "en", "de"]);
 
@@ -76,12 +70,7 @@ export const messageDirectionEnum = pgEnum("message_direction", [
   "note",
 ]);
 
-export const authorTypeEnum = pgEnum("author_type", [
-  "contact",
-  "user",
-  "ai",
-  "system",
-]);
+export const authorTypeEnum = pgEnum("author_type", ["contact", "user", "ai", "system"]);
 
 export const scanStatusEnum = pgEnum("scan_status", [
   "pending",
@@ -127,6 +116,15 @@ export const shops = pgTable(
     magentoWebsiteId: integer("magento_website_id"),
     /** Prefix van ordernummers, helpt bij herkennen in mailtekst. */
     orderNumberPrefix: text("order_number_prefix"),
+    /** Schrijfstijl voor de AI, door de beheerder goedgekeurd. */
+    toneOfVoice: text("tone_of_voice").notNull().default(""),
+    /** Bewaartermijnen (AVG). Tickets na sluiten; bijlagen en ruwe mail na ontvangst. */
+    retentionDaysTickets: integer("retention_days_tickets").notNull().default(730),
+    retentionDaysAttachments: integer("retention_days_attachments")
+      .notNull()
+      .default(180),
+    /** Openingstijden als tekst voor de autoreply, bijv. "ma–vr 9:00–17:00". */
+    openingHours: text("opening_hours").notNull().default("ma–vr 9:00–17:00"),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -278,11 +276,7 @@ export const tickets = pgTable(
   },
   (t) => [
     uniqueIndex("tickets_org_number_uq").on(t.organizationId, t.number),
-    index("tickets_org_status_idx").on(
-      t.organizationId,
-      t.status,
-      t.lastMessageAt,
-    ),
+    index("tickets_org_status_idx").on(t.organizationId, t.status, t.lastMessageAt),
     index("tickets_org_assignee_idx").on(t.organizationId, t.assigneeId),
     index("tickets_contact_idx").on(t.contactId),
   ],
@@ -439,6 +433,132 @@ export const auditLog = pgTable(
   (t) => [index("audit_log_org_created_idx").on(t.organizationId, t.createdAt)],
 );
 
+// ---------------------------------------------------------------------------
+// Sjablonen, kennisbank en AI
+// ---------------------------------------------------------------------------
+
+/** Vaste antwoorden (macro's), per shop of voor alle shops, per taal. */
+export const templates = pgTable(
+  "templates",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    /** null = voor alle shops. */
+    shopId: uuid("shop_id").references(() => shops.id, { onDelete: "cascade" }),
+    language: languageEnum("language").notNull(),
+    name: text("name").notNull(),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("templates_org_idx").on(t.organizationId, t.language)],
+);
+
+export const knowledgeKindEnum = pgEnum("knowledge_kind", ["page", "upload", "note"]);
+export const knowledgeStatusEnum = pgEnum("knowledge_status", [
+  "pending",
+  "indexed",
+  "excluded",
+  "failed",
+]);
+
+/** Eén bron in de kennisbank: een gecrawlde pagina, een upload of een notitie. */
+export const knowledgeSources = pgTable(
+  "knowledge_sources",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    shopId: uuid("shop_id")
+      .notNull()
+      .references(() => shops.id, { onDelete: "cascade" }),
+    kind: knowledgeKindEnum("kind").notNull(),
+    title: text("title").notNull(),
+    url: text("url"),
+    status: knowledgeStatusEnum("status").notNull().default("pending"),
+    contentText: text("content_text").notNull().default(""),
+    contentHash: text("content_hash"),
+    lastCrawledAt: timestamp("last_crawled_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("knowledge_org_shop_idx").on(t.organizationId, t.shopId, t.status),
+    uniqueIndex("knowledge_shop_url_uq").on(t.shopId, t.url),
+  ],
+);
+
+export const aiModeEnum = pgEnum("ai_mode", ["off", "draft", "autopilot"]);
+
+/** Per vraagtype: wat mag de AI? Uit, alleen concepten, of zelf versturen. */
+export const aiIntentSettings = pgTable(
+  "ai_intent_settings",
+  {
+    organizationId: organizationId(),
+    intent: text("intent").notNull(),
+    label: text("label").notNull(),
+    mode: aiModeEnum("mode").notNull().default("draft"),
+    /** Minimale zekerheid (0–100) voor autopilot. */
+    confidenceThreshold: integer("confidence_threshold").notNull().default(90),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.intent] })],
+);
+
+export const draftStatusEnum = pgEnum("draft_status", ["pending", "used", "discarded"]);
+
+/** Een door de AI voorbereid antwoord op een ticket. */
+export const aiDrafts = pgTable(
+  "ai_drafts",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => tickets.id, { onDelete: "cascade" }),
+    /** In de taal van de klant. */
+    body: text("body").notNull(),
+    /** Nederlandse vertaling voor de agent (leeg als de klant Nederlands schrijft). */
+    translation: text("translation"),
+    confidence: integer("confidence").notNull(),
+    /** Gebruikte bronnen: [{ title, url }]. */
+    sources: jsonb("sources")
+      .$type<{ title: string; url: string | null }[]>()
+      .notNull()
+      .default([]),
+    status: draftStatusEnum("status").notNull().default("pending"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("ai_drafts_ticket_idx").on(t.ticketId, t.createdAt)],
+);
+
+export const integrationKindEnum = pgEnum("integration_kind", [
+  "mailgun",
+  "magento",
+  "ai",
+]);
+export const integrationStatusEnum = pgEnum("integration_status", [
+  "not_configured",
+  "connected",
+  "error",
+  "demo",
+]);
+
+/** Status van externe koppelingen. Geheimen staan hier nooit; die zitten in omgevingsvariabelen. */
+export const integrations = pgTable(
+  "integrations",
+  {
+    organizationId: organizationId(),
+    kind: integrationKindEnum("kind").notNull(),
+    status: integrationStatusEnum("status").notNull().default("not_configured"),
+    /** Niet-geheime instellingen, bijv. regio of basis-URL. */
+    settings: jsonb("settings").$type<Record<string, string>>().notNull().default({}),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+    lastError: text("last_error"),
+  },
+  (t) => [primaryKey({ columns: [t.organizationId, t.kind] })],
+);
+
 /** Tabellen waarop Row Level Security per organisatie geldt. */
 export const TENANT_TABLES = [
   "shops",
@@ -456,4 +576,9 @@ export const TENANT_TABLES = [
   "ticket_orders",
   "ticket_events",
   "audit_log",
+  "templates",
+  "knowledge_sources",
+  "ai_intent_settings",
+  "ai_drafts",
+  "integrations",
 ] as const;

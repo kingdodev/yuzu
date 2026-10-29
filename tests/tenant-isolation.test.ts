@@ -42,10 +42,8 @@ describe("scheiding tussen organisaties", () => {
   });
 
   it("toont niets als de organisatie niet bestaat", async () => {
-    const seen = await withTenant(
-      db,
-      "00000000-0000-4000-8000-000000000000",
-      ({ tx }) => tx.select().from(contacts),
+    const seen = await withTenant(db, "00000000-0000-4000-8000-000000000000", ({ tx }) =>
+      tx.select().from(contacts),
     );
     expect(seen).toHaveLength(0);
   });
@@ -87,9 +85,7 @@ describe("scheiding tussen organisaties", () => {
 
   it("mag het auditlog niet wijzigen of wissen", async () => {
     await expectDbError(
-      withTenant(db, orgA.org.id, ({ tx }) =>
-        tx.execute(sql`delete from audit_log`),
-      ),
+      withTenant(db, orgA.org.id, ({ tx }) => tx.execute(sql`delete from audit_log`)),
       /permission denied/i,
     );
   });

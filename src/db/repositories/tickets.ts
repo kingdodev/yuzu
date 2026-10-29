@@ -4,9 +4,7 @@ import { organizations, ticketEvents, tickets } from "../schema";
 import type { TenantTx } from "../tenant";
 
 export type Actor =
-  | { type: "user"; userId: string }
-  | { type: "ai" }
-  | { type: "system" };
+  { type: "user"; userId: string } | { type: "ai" } | { type: "system" };
 
 function actorColumns(actor: Actor) {
   return {

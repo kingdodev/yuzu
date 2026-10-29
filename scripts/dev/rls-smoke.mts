@@ -4,7 +4,7 @@ import { upsertContact } from "@/db/repositories/contacts";
 import { contacts, organizations, shops } from "@/db/schema";
 import { withPrivileged, withTenant } from "@/db/tenant";
 
-const db = getDb();
+const db = await getDb();
 const ids = await withPrivileged(db, async (tx) => {
   const made = [];
   for (const slug of ["smoke-a", "smoke-b"]) {

@@ -5,34 +5,52 @@ AI-assistent die eenvoudige vragen voorbereidt of beantwoordt.
 
 ## Stand van zaken
 
-Gebouwd:
+**Werkt (met voorbeelddata):**
 
-- Projectbasis (Next.js, TypeScript, Tailwind)
-- Datamodel: organisaties, shops, gebruikers en rollen, teams, klanten,
-  tickets, berichten, bijlagen, tags, gekoppelde orders, ticketgeschiedenis en
-  auditlog
-- Afscherming per organisatie in de database zelf (Row Level Security), zodat
-  Yuzu later veilig meerdere bedrijven kan bedienen
-- Ticketregels: nummering, statussen, heropenen bij een reactie van de klant
-- Herkennen van e-mailadressen en ordernummers in mailtekst
-- Automatische tests voor al het bovenstaande
+- Inbox met weergaven: te doen, mijn tickets, niet toegewezen, wacht op
+  antwoord, opgelost, en per shop
+- Ticketscherm: gesprek met automatische vertaling van Franse en Spaanse
+  mails, concept-antwoord van Yuzu in de taal van de klant met Nederlandse
+  vertaling ernaast, antwoorden, interne notities, sjablonen, status,
+  eigenaar, prioriteit en labels
+- Klant- en orderpaneel naast elk ticket: orders, artikelen, verzending met
+  trackinglink, betaling, terugbetalingen
+- Rapportages: drukte per shop, soorten vragen, reactietijd, gebruik van
+  AI-concepten
+- Beheer: shops, gebruikers en rollen, teams, labels, sjablonen, kennisbank
+  (pagina's, documenten, werkinstructies), AI-instellingen per soort vraag,
+  koppelingen, privacy (inzage, verwijderen, bewaartermijnen) en auditlog
+- Afscherming per organisatie in de database (klaar voor SaaS), auditlog dat
+  niemand kan wijzigen
 
-Volgende stappen: inloggen met Google, e-mail ontvangen en versturen via
-Mailgun, de inbox, en de koppeling met Magento.
+**Nog nagebootst:** e-mail (Mailgun), Magento-orders, AI-concepten, crawler
+en het verwerken van documenten. Verstuurde antwoorden worden opgeslagen maar
+nog niet echt gemaild.
 
-## Wat jij moet doen (Frank)
+**Nog niet gebouwd:** inloggen met Google, en de echte koppelingen hierboven.
 
-Nog niets voor deze stap. Als de eerste testversie online moet, maak je een
-Supabase- en Vercel-account aan; de exacte stappen volgen dan.
+## Bekijken
+
+Zonder `DATABASE_URL` start Yuzu met een lokale demodatabase en voorbeelddata
+(vier shops, tickets in drie talen). Niets wordt naar buiten gestuurd.
+
+```bash
+npm install
+npm run dev       # http://localhost:3000
+```
+
+De demodatabase staat in `.data/`. Verwijder die map om opnieuw met verse
+voorbeelddata te beginnen.
 
 ## Voor ontwikkelaars
 
 Vereist Node.js 22 of nieuwer.
 
 ```bash
-npm install
 npm test          # alle tests, geen database nodig
-npm run dev       # lokaal draaien op http://localhost:3000
+npm run typecheck
+npm run lint
+npm run build
 ```
 
 Afspraken voor de code staan in [CLAUDE.md](CLAUDE.md).

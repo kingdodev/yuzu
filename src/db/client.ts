@@ -3,23 +3,58 @@ import postgres from "postgres";
 import * as schema from "./schema";
 import type { Db } from "./types";
 
-let cached: Db | undefined;
+type Cache = { db?: Promise<Db> };
+// Bewaard op globalThis, zodat hot reload in ontwikkeling geen nieuwe verbinding opent.
+const cache = globalThis as unknown as { __yuzuDb?: Cache };
+cache.__yuzuDb ??= {};
 
 /**
- * De productiedatabase (Supabase Postgres). Wordt pas bij het eerste gebruik
- * aangemaakt, zodat builds en tests geen DATABASE_URL nodig hebben.
+ * De database.
+ *
+ * - Met DATABASE_URL: Supabase Postgres (productie, testomgeving).
+ * - Zonder DATABASE_URL: een lokale demodatabase (PGlite) in `.data/`, met
+ *   voorbeelddata. Zo is Yuzu te bekijken zonder accounts of koppelingen.
  */
-export function getDb(): Db {
-  if (cached) return cached;
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error("DATABASE_URL ontbreekt; zie .env.example");
-  }
+export function getDb(): Promise<Db> {
+  const c = cache.__yuzuDb!;
+  c.db ??= (
+    process.env.DATABASE_URL ? connectPostgres(process.env.DATABASE_URL) : openDemoDb()
+  ).catch((error: unknown) => {
+    // Niet de mislukte poging bewaren; de volgende aanvraag probeert opnieuw.
+    c.db = undefined;
+    throw error;
+  });
+  return c.db;
+}
+
+export function isDemoMode(): boolean {
+  return !process.env.DATABASE_URL;
+}
+
+async function connectPostgres(url: string): Promise<Db> {
   const client = postgres(url, {
     max: 5,
     // Supabase' transaction pooler ondersteunt geen prepared statements.
     prepare: false,
   });
-  cached = drizzle(client, { schema }) as unknown as Db;
-  return cached;
+  return drizzle(client, { schema }) as unknown as Db;
+}
+
+async function openDemoDb(): Promise<Db> {
+  const [{ PGlite }, { drizzle: drizzlePglite }, { migrate }, { seedDemo }, path, fs] =
+    await Promise.all([
+      import("@electric-sql/pglite"),
+      import("drizzle-orm/pglite"),
+      import("drizzle-orm/pglite/migrator"),
+      import("./seed/demo"),
+      import("node:path"),
+      import("node:fs"),
+    ]);
+  const dataDir = process.env.YUZU_DEMO_DIR ?? path.join(process.cwd(), ".data", "demo");
+  fs.mkdirSync(dataDir, { recursive: true });
+  const client = new PGlite(dataDir);
+  const db = drizzlePglite(client, { schema }) as unknown as Db;
+  await migrate(db as never, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+  await seedDemo(db);
+  return db;
 }

@@ -29,7 +29,10 @@ export function extractOrderNumberCandidates(
 
   // Losse cijferreeksen, maar geen telefoonnummers, postcodes of bedragen
   // met scheidingstekens, en geen trackingcodes die met letters beginnen.
-  const plain = new RegExp(`(?<![\\d.,+\\-/A-Za-z])(\\d{${minDigits},12})(?![\\d.,/])`, "g");
+  const plain = new RegExp(
+    `(?<![\\d.,+\\-/A-Za-z])(\\d{${minDigits},12})(?![\\d.,/])`,
+    "g",
+  );
   for (const m of withoutPhoneNumbers(text).matchAll(plain)) {
     found.add(m[1]);
   }

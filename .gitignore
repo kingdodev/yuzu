@@ -42,3 +42,6 @@ next-env.d.ts
 
 # voorbeeldconfiguratie mag wel mee
 !.env.example
+
+# lokale demodatabase
+/.data/

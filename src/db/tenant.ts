@@ -1,8 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { Db, Tx } from "./types";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Voer database-werk uit namens één organisatie.
@@ -37,9 +36,6 @@ export type TenantTx = { tx: Tx; organizationId: string };
  * organisaties heen gaan: een organisatie of gebruiker aanmaken, migraties,
  * onderhoudsjobs. Gebruik dit nooit voor verzoeken van agents.
  */
-export async function withPrivileged<T>(
-  db: Db,
-  fn: (tx: Tx) => Promise<T>,
-): Promise<T> {
+export async function withPrivileged<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return db.transaction(fn);
 }
