@@ -42,6 +42,16 @@ npm run dev       # http://localhost:3000
 De demodatabase staat in `.data/`. Verwijder die map om opnieuw met verse
 voorbeelddata te beginnen.
 
+## Online demo (Vercel)
+
+Importeer de repository in Vercel en zet één omgevingsvariabele:
+
+- `DEMO_PASSWORD`: het wachtwoord dat de browser vraagt (gebruikersnaam maakt
+  niet uit).
+
+Zet géén `DATABASE_URL`; dan draait de demo met voorbeelddata. Die begint af
+en toe opnieuw, omdat er nog geen vaste database achter zit.
+
 ## Voor ontwikkelaars
 
 Vereist Node.js 22 of nieuwer.

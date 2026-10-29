@@ -50,7 +50,11 @@ async function openDemoDb(): Promise<Db> {
       import("node:path"),
       import("node:fs"),
     ]);
-  const dataDir = process.env.YUZU_DEMO_DIR ?? path.join(process.cwd(), ".data", "demo");
+  // Op Vercel is alleen /tmp beschrijfbaar; de demodata begint daar bij elke
+  // nieuwe serverinstantie opnieuw.
+  const dataDir =
+    process.env.YUZU_DEMO_DIR ??
+    (process.env.VERCEL ? "/tmp/yuzu-demo" : path.join(process.cwd(), ".data", "demo"));
   fs.mkdirSync(dataDir, { recursive: true });
   const client = new PGlite(dataDir);
   const db = drizzlePglite(client, { schema }) as unknown as Db;

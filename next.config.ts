@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // PGlite (lokale demodatabase) laadt WebAssembly; niet bundelen.
   serverExternalPackages: ["@electric-sql/pglite"],
+  // Migraties worden bij het opstarten van de demodatabase gelezen; meenemen in de serverbundel.
+  outputFileTracingIncludes: {
+    "/**": ["./drizzle/**/*"],
+  },
   async redirects() {
     return [
       { source: "/", destination: "/inbox/open", permanent: false },
