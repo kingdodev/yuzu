@@ -12,7 +12,10 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
+import { attachmentsForTicket } from "@/db/repositories/attachments";
+import { searchTickets } from "@/db/repositories/search";
 import * as s from "@/db/schema";
+import { parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
 import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
 import { cache } from "react";
@@ -133,7 +136,8 @@ export async function listTickets(view: InboxView) {
 
 export async function getTicketDetail(ticketId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(ticketId)) return null;
-  return asTenant(async ({ tx }, session) => {
+  return asTenant(async (t, session) => {
+    const { tx } = t;
     const [ticket] = await tx
       .select({
         ticket: s.tickets,
@@ -155,6 +159,7 @@ export async function getTicketDetail(ticketId: string) {
       agents,
       templateRows,
       otherTickets,
+      attachmentRows,
     ] = await Promise.all([
       tx
         .select({ message: s.messages, authorName: s.users.name })
@@ -204,6 +209,7 @@ export async function getTicketDetail(ticketId: string) {
         )
         .orderBy(desc(s.tickets.createdAt))
         .limit(5),
+      attachmentsForTicket(t, ticketId),
     ]);
 
     const magento = await demoMagento.getCustomerContext(
@@ -230,8 +236,35 @@ export async function getTicketDetail(ticketId: string) {
       agents,
       templates: templateRows,
       otherTickets,
+      attachments: attachmentRows,
     };
   });
 }
 
+/** Zoek in alle tickets van de organisatie. Null als er niets te zoeken is. */
+export async function searchInbox(raw: string | null | undefined) {
+  const query = parseSearchQuery(raw);
+  if (!query) return null;
+  const results = await asTenant((t) => searchTickets(t, query));
+  return { query, results };
+}
+
 export type TicketDetail = NonNullable<Awaited<ReturnType<typeof getTicketDetail>>>;
+
+/** Actieve shops, om een nieuwe mail vanaf te sturen. */
+export async function listSendingShops() {
+  return asTenant(({ tx }) =>
+    tx
+      .select({
+        id: s.shops.id,
+        code: s.shops.code,
+        name: s.shops.name,
+        senderName: s.shops.senderName,
+        senderEmail: s.shops.senderEmail,
+        signature: s.shops.signature,
+      })
+      .from(s.shops)
+      .where(eq(s.shops.active, true))
+      .orderBy(sql`${s.shops.magentoStoreId} nulls last`, asc(s.shops.name)),
+  );
+}

@@ -1,0 +1,49 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 624 >>
+stream
+BT
+/F2 18 Tf 1 0 0 1 72 780 Tm (Bakker Interieur B.V.) Tj
+/F1 11 Tf 1 0 0 1 72 752 Tm () Tj
+/F1 11 Tf 1 0 0 1 72 731 Tm (Factuuradres) Tj
+/F1 11 Tf 1 0 0 1 72 710 Tm (Voorbeeldstraat 12) Tj
+/F1 11 Tf 1 0 0 1 72 689 Tm (1234 AB Voorbeeldstad) Tj
+/F1 11 Tf 1 0 0 1 72 668 Tm () Tj
+/F1 11 Tf 1 0 0 1 72 647 Tm (KvK-nummer: 12345678) Tj
+/F1 11 Tf 1 0 0 1 72 626 Tm (Btw-nummer: NL001234567B01) Tj
+/F1 11 Tf 1 0 0 1 72 605 Tm () Tj
+/F1 11 Tf 1 0 0 1 72 584 Tm (Contactpersoon: Peter Bakker) Tj
+/F1 11 Tf 1 0 0 1 72 563 Tm () Tj
+/F1 9 Tf 1 0 0 1 72 542 Tm (Voorbeelddocument voor de Yuzu-demo. Alle gegevens zijn verzonnen.) Tj
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000348 00000 n 
+0000000450 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1125
+%%EOF

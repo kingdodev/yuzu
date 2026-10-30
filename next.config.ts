@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite"],
   // Migraties worden bij het opstarten van de demodatabase gelezen; meenemen in de serverbundel.
   outputFileTracingIncludes: {
-    "/**": ["./drizzle/**/*"],
+    "/**": ["./drizzle/**/*", "./src/db/seed/files/**/*"],
   },
   async redirects() {
     return [

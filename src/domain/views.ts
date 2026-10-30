@@ -1,4 +1,5 @@
 /** De vaste weergaven in de inbox. */
+import type { TicketStatus } from "./tickets";
 
 export const SHOP_VIEWS = ["nl", "be", "fr", "es"] as const;
 
@@ -42,4 +43,19 @@ export function isInboxView(value: string): value is InboxView {
 
 export function isShopView(view: InboxView): view is (typeof SHOP_VIEWS)[number] {
   return (SHOP_VIEWS as readonly string[]).includes(view);
+}
+
+/** In welke lijst een ticket staat, om het vanuit zoeken of na aanmaken te openen. */
+export function viewForStatus(status: TicketStatus): InboxView {
+  switch (status) {
+    case "new":
+    case "open":
+      return "open";
+    case "pending_customer":
+    case "pending_third_party":
+      return "waiting";
+    case "solved":
+    case "closed":
+      return "solved";
+  }
 }

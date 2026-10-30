@@ -3,6 +3,7 @@
 import { ExternalLink, Sparkles } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { addNote, discardDraft, sendReply } from "@/server/actions/tickets";
+import { AttachmentPicker, type PickerState } from "../attachments/attachment-picker";
 
 type Draft = {
   id: string;
@@ -39,6 +40,9 @@ export function Composer(props: Props) {
     "pending_customer",
   );
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [files, setFiles] = useState<PickerState>({ ids: [], busy: false });
+  // Na versturen een nieuwe, lege bijlagenlijst.
+  const [pickerKey, setPickerKey] = useState(0);
   const [pending, start] = useTransition();
   const area = useRef<HTMLTextAreaElement>(null);
 
@@ -67,10 +71,20 @@ export function Composer(props: Props) {
       const result =
         mode === "note"
           ? await addNote(ticketId, text)
-          : await sendReply({ ticketId, body: text, nextStatus, draftId: usedDraftId });
+          : await sendReply({
+              ticketId,
+              body: text,
+              nextStatus,
+              draftId: usedDraftId,
+              attachmentIds: files.ids,
+            });
       if (result.ok) {
         setText("");
         setUsedDraftId(null);
+        if (mode === "reply") {
+          setPickerKey((k) => k + 1);
+          setFiles({ ids: [], busy: false });
+        }
         setFeedback(
           mode === "note"
             ? { ok: true, text: "Notitie toegevoegd." }
@@ -215,11 +229,20 @@ export function Composer(props: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && text.trim()) submit();
+              if (
+                (e.metaKey || e.ctrlKey) &&
+                e.key === "Enter" &&
+                text.trim() &&
+                !files.busy
+              )
+                submit();
             }}
           />
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className={mode === "reply" ? "contents" : "hidden"}>
+              <AttachmentPicker key={pickerKey} onChange={setFiles} disabled={closed} />
+            </div>
             {mode === "reply" && templates.length > 0 && (
               <select
                 className="field w-auto py-1.5"
@@ -251,10 +274,18 @@ export function Composer(props: Props) {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={pending || !text.trim() || (mode === "reply" && closed)}
+                disabled={
+                  pending || !text.trim() || (mode === "reply" && (closed || files.busy))
+                }
                 onClick={submit}
               >
-                {pending ? "Bezig…" : mode === "note" ? "Notitie toevoegen" : "Versturen"}
+                {pending
+                  ? "Bezig…"
+                  : mode === "note"
+                    ? "Notitie toevoegen"
+                    : files.busy
+                      ? "Bijlagen uploaden…"
+                      : "Versturen"}
               </button>
             </div>
           </div>

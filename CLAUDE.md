@@ -66,6 +66,15 @@ Frank (zie `usesDemoSession` in `src/db/connection.ts`), en laadt
 Zonder `DEMO_PASSWORD` geeft Yuzu met een database geen toegang, tot inloggen
 gebouwd is.
 
+## Bijlagen
+
+Bestanden staan in Supabase Storage (privé-bucket `attachments`), nooit in de
+database; sleutel `<organisatie-id>/<bijlage-id>`. Browsers uploaden
+rechtstreeks met een ondertekend adres (Vercel laat maar 4,5 MB per verzoek
+door) en downloaden via `/bijlagen/[id]`, dat RLS controleert en alleen
+afbeeldingen en pdf's in de browser toont (`servingFor`). Wie bijlagen in de
+database wist, wist ook de bestanden (zie `deleteAttachmentsOfTickets`).
+
 ## Structuur
 
 - `src/app/(app)/inbox` — inbox en ticketscherm

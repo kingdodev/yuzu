@@ -16,7 +16,19 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
           {contactLabel(contact.name, contact.email)}
         </div>
         {!contact.email.endsWith("@anoniem.invalid") && (
-          <div className="break-all text-[13.5px] text-ink-soft">{contact.email}</div>
+          <>
+            <div className="break-all text-[13.5px] text-ink-soft">{contact.email}</div>
+            <Link
+              href={`/inbox/nieuw?${new URLSearchParams({
+                aan: contact.email,
+                naam: contact.name ?? "",
+                shop: detail.shop.code,
+              })}`}
+              className="mt-1 inline-block text-[13.5px] text-link hover:underline"
+            >
+              Nieuwe e-mail aan deze klant
+            </Link>
+          </>
         )}
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13.5px]">
           <dt className="text-muted">Taal</dt>

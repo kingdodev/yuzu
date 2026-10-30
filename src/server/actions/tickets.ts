@@ -8,9 +8,13 @@ import {
   changeTicketStatus,
   type Actor,
 } from "@/db/repositories/tickets";
+import { insertOutboundMessage, startOutboundTicket } from "@/db/repositories/outbound";
 import * as s from "@/db/schema";
-import { nextTicketAfter, TICKET_STATUSES } from "@/domain/tickets";
-import { isInboxView } from "@/domain/views";
+import { MAX_ATTACHMENTS_PER_MESSAGE } from "@/domain/attachments";
+import { isPlausibleEmail } from "@/domain/contacts";
+import { nextTicketAfter, TICKET_STATUSES, type TicketStatus } from "@/domain/tickets";
+import { isInboxView, viewForStatus } from "@/domain/views";
+import { getFileStore } from "@/integrations/storage";
 import { listTickets } from "../inbox";
 import { asTenant } from "../session";
 
@@ -106,6 +110,7 @@ const replySchema = z.object({
   body: z.string().trim().min(1, "Schrijf eerst een antwoord").max(20_000),
   nextStatus: statusSchema,
   draftId: uuid.nullable(),
+  attachmentIds: z.array(uuid).max(MAX_ATTACHMENTS_PER_MESSAGE).default([]),
 });
 
 /**
@@ -118,7 +123,11 @@ export async function sendReply(
   const parsed = replySchema.safeParse(input);
   if (!parsed.success)
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldig antwoord" };
-  const { ticketId, body, nextStatus, draftId } = parsed.data;
+  const { ticketId, body, nextStatus, draftId, attachmentIds } = parsed.data;
+  const store = getFileStore();
+  if (attachmentIds.length > 0 && !store) {
+    return { ok: false, error: "Bijlagen zijn nog niet ingesteld." };
+  }
 
   try {
     await asTenant(async (t, session) => {
@@ -130,15 +139,15 @@ export async function sendReply(
         .where(eq(s.tickets.id, ticketId));
       if (!ticket) throw new Error("Ticket niet gevonden");
 
-      await tx.insert(s.messages).values({
-        organizationId,
+      await insertOutboundMessage(t, {
         ticketId,
-        direction: "outbound",
-        authorType: "user",
-        authorUserId: session.userId,
-        toEmails: [ticket.contactEmail],
+        userId: session.userId,
+        to: ticket.contactEmail,
         subject: `Re: ${ticket.ticket.subject}`,
-        bodyText: body,
+        body,
+        attachments: store
+          ? { ids: attachmentIds, actualSize: (key) => store.size(key) }
+          : undefined,
       });
 
       if (draftId) {
@@ -278,4 +287,55 @@ export async function archiveTickets(ticketIds: string[]): Promise<ActionResult>
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Archiveren mislukt" };
   }
+}
+
+const newTicketSchema = z.object({
+  shopId: uuid,
+  to: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine(isPlausibleEmail, "Vul een geldig e-mailadres in"),
+  name: z.string().trim().max(200).optional(),
+  subject: z.string().trim().min(1, "Vul een onderwerp in").max(300),
+  body: z.string().trim().min(1, "Schrijf eerst een bericht").max(20_000),
+  nextStatus: z.enum(["pending_customer", "solved", "open"]),
+  attachmentIds: z.array(uuid).max(MAX_ATTACHMENTS_PER_MESSAGE).default([]),
+});
+
+export type NewTicketResult = { ok: true; href: string } | { ok: false; error: string };
+
+/**
+ * Zelf een mail aan een klant beginnen. Dat wordt een nieuw ticket op jouw
+ * naam. In de demo wordt de mail nog niet echt verstuurd.
+ */
+export async function createOutboundTicket(
+  input: z.input<typeof newTicketSchema>,
+): Promise<NewTicketResult> {
+  const parsed = newTicketSchema.safeParse(input);
+  if (!parsed.success)
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldig bericht" };
+  const { attachmentIds, ...data } = parsed.data;
+  const store = getFileStore();
+  if (attachmentIds.length > 0 && !store) {
+    return { ok: false, error: "Bijlagen zijn nog niet ingesteld." };
+  }
+
+  let created: { id: string; status: TicketStatus };
+  try {
+    created = await asTenant((t, session) =>
+      startOutboundTicket(t, {
+        ...data,
+        name: data.name || null,
+        userId: session.userId,
+        attachments: store
+          ? { ids: attachmentIds, actualSize: (key) => store.size(key) }
+          : undefined,
+      }),
+    );
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Versturen mislukt" };
+  }
+  refresh();
+  return { ok: true, href: `/inbox/${viewForStatus(created.status)}/${created.id}` };
 }

@@ -332,9 +332,12 @@ export const attachments = pgTable(
   {
     id: id(),
     organizationId: organizationId(),
-    messageId: uuid("message_id")
-      .notNull()
-      .references(() => messages.id, { onDelete: "cascade" }),
+    /** Leeg zolang een agent de bijlage uploadt en het bericht nog niet verstuurd is. */
+    messageId: uuid("message_id").references(() => messages.id, { onDelete: "cascade" }),
+    /** Wie de bijlage uploadde; leeg bij bijlagen van klanten. */
+    uploadedById: uuid("uploaded_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     filename: text("filename").notNull(),
     contentType: text("content_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
@@ -342,7 +345,10 @@ export const attachments = pgTable(
     scanStatus: scanStatusEnum("scan_status").notNull().default("pending"),
     createdAt: createdAt(),
   },
-  (t) => [index("attachments_message_idx").on(t.messageId)],
+  (t) => [
+    index("attachments_message_idx").on(t.messageId),
+    index("attachments_uploaded_by_idx").on(t.uploadedById),
+  ],
 );
 
 export const tags = pgTable(

@@ -5,7 +5,9 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db/client";
+import { deleteAttachmentsOfTickets } from "@/db/repositories/attachments";
 import * as s from "@/db/schema";
+import { getFileStore } from "@/integrations/storage";
 import { withPrivileged, type TenantTx } from "@/db/tenant";
 import { normalizeEmail } from "@/domain/contacts";
 import { asAdmin, type Session } from "../session";
@@ -560,13 +562,15 @@ export async function anonymizeContact(_: FormState, form: FormData): Promise<Fo
     const contactId = uuid.parse(form.get("contactId"));
     if (form.get("confirm") !== "VERWIJDER")
       throw new Error("Typ VERWIJDER om te bevestigen");
-    await asAdmin(async (t, session) => {
+    const fileKeys = await asAdmin(async (t, session) => {
       const ticketIds = (
         await t.tx
           .select({ id: s.tickets.id })
           .from(s.tickets)
           .where(eq(s.tickets.contactId, contactId))
       ).map((r) => r.id);
+      // Bijlagen kunnen ook persoonsgegevens bevatten (foto's, facturen).
+      const keys = await deleteAttachmentsOfTickets(t, ticketIds);
       await t.tx
         .update(s.contacts)
         .set({
@@ -601,8 +605,22 @@ export async function anonymizeContact(_: FormState, form: FormData): Promise<Fo
       }
       await audit(t, session, "contact_anonymized", "contact", contactId, {
         tickets: ticketIds.length,
+        attachments: keys.length,
       });
+      return keys;
     });
+    // Pas na de transactie de bestanden wissen; mislukt dat, dan staan ze
+    // nergens meer in de database en ruimt een onderhoudsjob ze later op.
+    if (fileKeys.length > 0) {
+      try {
+        await getFileStore()?.remove(fileKeys);
+      } catch (e) {
+        console.error(
+          "Bijlagen wissen na anonimiseren mislukt",
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
   } catch (e) {
     return fail(e);
   }

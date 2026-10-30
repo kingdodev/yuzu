@@ -1,12 +1,18 @@
 import { Sparkles, StickyNote } from "lucide-react";
 import { contactLabel, formatDateTime, LANGUAGE_LABELS, timeAgo } from "@/lib/format";
 import type { TicketDetail } from "@/server/inbox";
+import { AttachmentList, type AttachmentItem } from "../attachments/attachment-list";
 import { Body, TranslatedText } from "./translated-text";
 
 export function Thread({ detail }: { detail: TicketDetail }) {
   const languageName = (LANGUAGE_LABELS[detail.ticket.language ?? "nl"] ?? "")
     .toLowerCase()
     .replace(/^\w/, (c) => c.toUpperCase());
+  const byMessage = new Map<string, AttachmentItem[]>();
+  for (const a of detail.attachments) {
+    if (!a.messageId) continue;
+    byMessage.set(a.messageId, [...(byMessage.get(a.messageId) ?? []), a]);
+  }
   return (
     <ol className="space-y-4">
       {detail.thread.map(({ message: m, authorName }) => {
@@ -42,6 +48,7 @@ export function Thread({ detail }: { detail: TicketDetail }) {
                 <span className="ml-auto">{when}</span>
               </div>
               <Body text={m.bodyText} />
+              <AttachmentList items={byMessage.get(m.id) ?? []} />
             </li>
           );
         }
@@ -74,6 +81,7 @@ export function Thread({ detail }: { detail: TicketDetail }) {
               translation={m.translatedText}
               languageName={languageName}
             />
+            <AttachmentList items={byMessage.get(m.id) ?? []} />
           </li>
         );
       })}

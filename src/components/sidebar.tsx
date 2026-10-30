@@ -1,4 +1,14 @@
-import { BarChart3, CheckCheck, Clock, Inbox, Settings, User, UserX } from "lucide-react";
+import {
+  BarChart3,
+  CheckCheck,
+  Clock,
+  Inbox,
+  Settings,
+  SquarePen,
+  User,
+  UserX,
+} from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 import { VIEW_LABELS, type InboxView } from "@/domain/views";
 import { getViewCounts } from "@/server/inbox";
@@ -14,6 +24,10 @@ export function Sidebar() {
       aria-label="Hoofdmenu"
       className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-3"
     >
+      <Link href="/inbox/nieuw" className="btn btn-primary w-full justify-center">
+        <SquarePen className="h-4 w-4" aria-hidden />
+        Nieuwe e-mail
+      </Link>
       <Suspense fallback={<Skeleton lines={9} />}>
         <SidebarWithData />
       </Suspense>

@@ -48,6 +48,8 @@ Importeer de repository in Vercel en zet twee omgevingsvariabelen:
 
 - `DEMO_PASSWORD`: het wachtwoord dat de browser vraagt (gebruikersnaam maakt
   niet uit).
+- `SUPABASE_URL` en `SUPABASE_SECRET_KEY`: voor bijlagen (Supabase Storage).
+  Zonder deze twee kun je geen bijlagen bekijken of meesturen.
 - `DATABASE_URL`: de verbinding met Supabase (regio Frankfurt). Neem in
   Supabase onder **Connect** de **Transaction pooler** (poort 6543) en vul je
   databasewachtwoord in.

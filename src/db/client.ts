@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { demoDataDir } from "@/lib/demo-dir";
 import { postgresOptions } from "./connection";
 import * as schema from "./schema";
 import type { Db } from "./types";
@@ -47,15 +48,19 @@ async function openDemoDb(): Promise<Db> {
       import("node:path"),
       import("node:fs"),
     ]);
-  // Op Vercel is alleen /tmp beschrijfbaar; de demodata begint daar bij elke
-  // nieuwe serverinstantie opnieuw.
-  const dataDir =
-    process.env.YUZU_DEMO_DIR ??
-    (process.env.VERCEL ? "/tmp/yuzu-demo" : path.join(process.cwd(), ".data", "demo"));
+  // Op Vercel begint de demodata zonder database bij elke nieuwe
+  // serverinstantie opnieuw.
+  const dataDir = demoDataDir();
   fs.mkdirSync(dataDir, { recursive: true });
   const client = new PGlite(dataDir);
   const db = drizzlePglite(client, { schema }) as unknown as Db;
   await migrate(db as never, { migrationsFolder: path.join(process.cwd(), "drizzle") });
   await seedDemo(db);
+  const [{ getFileStore }, { seedDemoAttachments }] = await Promise.all([
+    import("@/integrations/storage"),
+    import("./seed/demo-attachments"),
+  ]);
+  const store = getFileStore();
+  if (store) await seedDemoAttachments(db, store);
   return db;
 }
