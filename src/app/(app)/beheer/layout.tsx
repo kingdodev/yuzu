@@ -1,5 +1,7 @@
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { Suspense, type ReactNode } from "react";
 import { NavLink } from "@/components/nav-link";
+import { canManage, getSession } from "@/server/session";
 
 const SECTIONS: { title: string; links: [string, string][] }[] = [
   {
@@ -30,6 +32,23 @@ const SECTIONS: { title: string; links: [string, string][] }[] = [
 ];
 
 export default function BeheerLayout({ children }: LayoutProps<"/beheer">) {
+  return (
+    <Suspense fallback={null}>
+      <AdminOnly>
+        <BeheerShell>{children}</BeheerShell>
+      </AdminOnly>
+    </Suspense>
+  );
+}
+
+/** Beheer is alleen voor eigenaars en beheerders; anderen gaan naar de inbox. */
+async function AdminOnly({ children }: { children: ReactNode }) {
+  const session = await getSession();
+  if (!canManage(session.role)) redirect("/inbox/open");
+  return children;
+}
+
+function BeheerShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       <nav

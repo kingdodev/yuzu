@@ -1,27 +1,44 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isPublicPath, SESSION_COOKIE } from "@/lib/auth-cookie";
 
 /**
- * Wachtwoord voor de demo-omgeving. Staat DEMO_PASSWORD ingesteld (bijv. in
- * Vercel), dan vraagt de browser om een gebruikersnaam (maakt niet uit) en
- * dat wachtwoord. Zonder DEMO_PASSWORD is de site open, zoals lokaal.
+ * Twee sloten, in deze volgorde:
  *
- * Dit is een tijdelijk slot voor de demo; echte gebruikers loggen straks in
- * met Google.
+ * 1. Demowachtwoord. Staat DEMO_PASSWORD ingesteld (bijv. in Vercel), dan
+ *    vraagt de browser eerst om dat wachtwoord (gebruikersnaam maakt niet
+ *    uit). Zonder DEMO_PASSWORD is dit slot open.
+ * 2. Inloggen. Met een echte database (DATABASE_URL) moet je ingelogd zijn;
+ *    zonder sessiecookie ga je naar /inloggen. Of de sessie geldig is,
+ *    controleert de server daarna in de database (src/server/session.ts).
  */
 export function proxy(request: NextRequest) {
   // Spaties of een regeleinde aan het begin of eind (bijv. door plakken) tellen niet mee.
   const password = process.env.DEMO_PASSWORD?.trim();
-  if (!password) return NextResponse.next();
-
-  const given = passwordFromHeader(request.headers.get("authorization"));
-  if (given !== null && timingSafeEqual(given.trim(), password)) {
-    return NextResponse.next();
+  if (password) {
+    const given = passwordFromHeader(request.headers.get("authorization"));
+    if (given === null || !timingSafeEqual(given.trim(), password)) {
+      return new NextResponse("Voer het wachtwoord van de Yuzu-demo in.", {
+        status: 401,
+        headers: { "WWW-Authenticate": 'Basic realm="Yuzu demo", charset="UTF-8"' },
+      });
+    }
   }
 
-  return new NextResponse("Voer het wachtwoord van de Yuzu-demo in.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Yuzu demo", charset="UTF-8"' },
-  });
+  if (loginRequired() && !isPublicPath(request.nextUrl.pathname)) {
+    if (!request.cookies.get(SESSION_COOKIE)?.value) {
+      const url = request.nextUrl.clone();
+      const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+      url.pathname = "/inloggen";
+      url.search = next === "/" ? "" : `?volgende=${encodeURIComponent(next)}`;
+      return NextResponse.redirect(url);
+    }
+  }
+  return NextResponse.next();
+}
+
+/** Alleen met een echte database; de lokale demo is altijd Frank. */
+function loginRequired(): boolean {
+  return Boolean(process.env.DATABASE_URL);
 }
 
 /** Haalt het wachtwoord uit een Basic-authenticatieheader; null als die ontbreekt of ongeldig is. */

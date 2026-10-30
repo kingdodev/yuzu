@@ -3,6 +3,7 @@ import { MemberRow } from "@/components/admin/member-row";
 import { ROLE_LABELS } from "@/lib/roles";
 import { ActionForm, Field } from "@/components/forms";
 import { DemoNotice, PageHeader, Panel, Skeleton } from "@/components/ui";
+import { usesDemoSession } from "@/db/connection";
 import { inviteMember } from "@/server/actions/admin";
 import { listMembers, listShops } from "@/server/admin";
 
@@ -40,8 +41,8 @@ export default function UsersPage() {
             </Field>
           </div>
           <DemoNotice>
-            Inloggen met Google is nog niet gekoppeld. De gebruiker staat dan al klaar en
-            krijgt een uitnodiging per mail.
+            Na het toevoegen maak je bij de gebruiker een uitnodigingslink. Daarmee kiest
+            die zelf een wachtwoord. Tot e-mail gekoppeld is, stuur je die link zelf door.
           </DemoNotice>
         </ActionForm>
       </Panel>
@@ -68,6 +69,7 @@ async function Members() {
           key={m.userId}
           member={m}
           shops={shops.map((s) => ({ id: s.id, code: s.code, name: s.name }))}
+          showLogin={!usesDemoSession()}
         />
       ))}
     </Panel>

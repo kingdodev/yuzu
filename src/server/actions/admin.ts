@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/db/client";
 import { deleteAttachmentsOfTickets } from "@/db/repositories/attachments";
+import { deleteSessionsIfInactive } from "@/db/repositories/auth";
 import * as s from "@/db/schema";
 import { getFileStore } from "@/integrations/storage";
 import { withPrivileged, type TenantTx } from "@/db/tenant";
@@ -167,7 +168,7 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
   return {
     ok: true,
     message:
-      "Gebruiker toegevoegd. Zodra inloggen met Google klaar is, krijgt die een uitnodiging per mail.",
+      "Gebruiker toegevoegd. Maak hierboven bij de gebruiker een uitnodigingslink en stuur die door.",
   };
 }
 
@@ -219,6 +220,8 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         allShops,
       });
     });
+    // Uitgeschakeld en nergens anders meer actief? Dan overal uitloggen.
+    if (!active) await deleteSessionsIfInactive(await getDb(), userId);
   } catch (e) {
     return fail(e);
   }

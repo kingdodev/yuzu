@@ -142,9 +142,79 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   language: languageEnum("language").notNull().default("nl"),
+  /** Wanneer het wachtwoord voor het laatst is ingesteld; leeg = nog geen. */
+  passwordSetAt: timestamp("password_set_at", { withTimezone: true }),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+// ---------------------------------------------------------------------------
+// Inloggen. Deze tabellen zijn niet leesbaar voor de app-rol (yuzu_app); alleen
+// het inlogpad gebruikt ze, via withPrivileged (zie src/db/repositories/auth.ts).
+
+/** Wachtwoorden, als scrypt-hash. Nooit het wachtwoord zelf. */
+export const userCredentials = pgTable("user_credentials", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  passwordHash: text("password_hash").notNull(),
+  updatedAt: updatedAt(),
+});
+
+/** Ingelogde browsers. De cookie bevat een token; hier staat alleen de hash. */
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdAt: createdAt(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)],
+);
+
+/** Inlogpogingen, om raden te remmen. Alleen hashes, geen e-mailadressen of IP's. */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: id(),
+    emailHash: text("email_hash").notNull(),
+    ipHash: text("ip_hash"),
+    success: boolean("success").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("login_attempts_email_idx").on(t.emailHash, t.createdAt),
+    index("login_attempts_ip_idx").on(t.ipHash, t.createdAt),
+  ],
+);
+
+export const authTokenPurposeEnum = pgEnum("auth_token_purpose", ["invite", "reset"]);
+
+/** Eenmalige links om een wachtwoord in te stellen (uitnodiging of reset). */
+export const authTokens = pgTable(
+  "auth_tokens",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    purpose: authTokenPurposeEnum("purpose").notNull(),
+    createdById: uuid("created_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("auth_tokens_user_idx").on(t.userId)],
+);
 
 export const memberships = pgTable(
   "memberships",

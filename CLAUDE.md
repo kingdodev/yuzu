@@ -52,7 +52,7 @@ Magento-webshops". Lees ook AGENTS.md (Next.js-specifieke regels).
 - Elke wijziging met tests. `npm run typecheck && npm run lint && npm test &&
   npm run build` moet slagen voordat iets naar main gaat.
 
-## Demo-omgeving
+## Demo-omgeving en inloggen
 
 Zonder `DATABASE_URL` draait Yuzu op PGlite in `.data/demo` met voorbeelddata
 (`src/db/seed/demo.ts`), en is de ingelogde gebruiker altijd Frank (eigenaar).
@@ -60,11 +60,17 @@ Magento komt dan uit `src/integrations/magento/demo.ts`. De echte koppelingen
 implementeren dezelfde interfaces; de schermen hoeven daarvoor niet te
 veranderen.
 
-De online demo draait op Supabase mét `DEMO_PASSWORD`: dan is de gebruiker ook
-Frank (zie `usesDemoSession` in `src/db/connection.ts`), en laadt
-`scripts/migrate.mts` bij elke deploy de migraties en eenmalig de voorbeelddata.
-Zonder `DEMO_PASSWORD` geeft Yuzu met een database geen toegang, tot inloggen
-gebouwd is.
+Met `DATABASE_URL` logt iedereen in met e-mail en wachtwoord (eigen
+implementatie: scrypt-hashes, sessiecookie `yuzu_session` met alleen de
+SHA-256 in de database, remmen op raden). De inlogtabellen
+(`user_credentials`, `sessions`, `login_attempts`, `auth_tokens`) zijn
+afgeschermd voor `yuzu_app`; alleen `src/db/repositories/auth.ts` gebruikt ze
+via `withPrivileged`, omdat bij inloggen de organisatie nog niet bekend is.
+Collega's krijgen een eenmalige link (Beheer → Gebruikers) om zelf een
+wachtwoord te kiezen. Het allereerste wachtwoord stelt de eigenaar in op
+/inloggen, alleen zolang niemand een wachtwoord heeft en alleen achter
+`DEMO_PASSWORD`. Bij elke deploy laadt `scripts/migrate.mts` de migraties, en
+met `DEMO_PASSWORD` eenmalig de voorbeelddata (zonder wachtwoorden).
 
 ## Bijlagen
 

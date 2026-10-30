@@ -6,8 +6,10 @@ import { cache } from "react";
 import { getDb } from "@/db/client";
 import { usesDemoSession } from "@/db/connection";
 import { memberships, organizations, users } from "@/db/schema";
+import { findSession } from "@/db/repositories/auth";
 import { DEMO_ORG_SLUG, DEMO_USER_ID } from "@/db/seed/demo";
 import { withPrivileged, withTenant, type TenantTx } from "@/db/tenant";
+import { readSessionToken } from "./auth";
 
 export type Role = "owner" | "admin" | "teamlead" | "agent" | "viewer";
 
@@ -23,35 +25,51 @@ export type Session = {
 /**
  * De ingelogde gebruiker en zijn organisatie.
  *
- * Zolang inloggen niet gebouwd is, is dat altijd Frank (eigenaar): zonder
- * database, of met database achter het demowachtwoord. Zodra inloggen met
- * Google via Supabase Auth gebouwd is, komt de gebruiker uit de sessie.
+ * In de lokale demo zonder database is dat altijd Frank (eigenaar). Anders
+ * komt de gebruiker uit de sessiecookie; zonder geldige sessie ga je naar
+ * de inlogpagina.
  */
 export const getSession = cache(async (): Promise<Session> => {
+  const session = await getOptionalSession();
+  if (!session) redirect("/inloggen");
+  return session;
+});
+
+/** Zoals getSession, maar null in plaats van naar de inlogpagina. */
+export const getOptionalSession = cache(async (): Promise<Session | null> => {
   await connection();
-  if (!usesDemoSession()) {
-    throw new Error(
-      "Inloggen is nog niet gebouwd. Zet DEMO_PASSWORD, of draai Yuzu zonder DATABASE_URL.",
-    );
-  }
   const db = await getDb();
-  const [row] = await withPrivileged(db, (tx) =>
-    tx
-      .select({
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        organizationId: organizations.id,
-        organizationName: organizations.name,
-        role: memberships.role,
-      })
-      .from(memberships)
-      .innerJoin(users, eq(users.id, memberships.userId))
-      .innerJoin(organizations, eq(organizations.id, memberships.organizationId))
-      .where(and(eq(organizations.slug, DEMO_ORG_SLUG), eq(users.id, DEMO_USER_ID))),
-  );
-  if (!row) throw new Error("Demo-organisatie niet gevonden");
-  return row;
+  if (usesDemoSession()) {
+    const [row] = await withPrivileged(db, (tx) =>
+      tx
+        .select({
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          organizationId: organizations.id,
+          organizationName: organizations.name,
+          role: memberships.role,
+        })
+        .from(memberships)
+        .innerJoin(users, eq(users.id, memberships.userId))
+        .innerJoin(organizations, eq(organizations.id, memberships.organizationId))
+        .where(and(eq(organizations.slug, DEMO_ORG_SLUG), eq(users.id, DEMO_USER_ID))),
+    );
+    if (!row) throw new Error("Demo-organisatie niet gevonden");
+    return row;
+  }
+  const token = await readSessionToken();
+  if (!token) return null;
+  const row = await findSession(db, token);
+  if (!row) return null;
+  return {
+    userId: row.userId,
+    name: row.name,
+    email: row.email,
+    organizationId: row.organizationId,
+    organizationName: row.organizationName,
+    role: row.role,
+  };
 });
 
 export function canManage(role: Role): boolean {

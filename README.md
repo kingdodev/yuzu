@@ -27,7 +27,7 @@ AI-assistent die eenvoudige vragen voorbereidt of beantwoordt.
 en het verwerken van documenten. Verstuurde antwoorden worden opgeslagen maar
 nog niet echt gemaild.
 
-**Nog niet gebouwd:** inloggen met Google, en de echte koppelingen hierboven.
+**Nog niet gebouwd:** de echte koppelingen hierboven.
 
 ## Bekijken
 
@@ -59,9 +59,11 @@ Bij elke deploy past Vercel eerst de databasemigraties toe (`vercel-build` in
 package.json). Staat `DEMO_PASSWORD` aan, dan laadt het ook de voorbeelddata,
 maar alleen de eerste keer. Wat je daarna doet, blijft bewaard.
 
-Zolang inloggen niet gebouwd is, ben je in de online demo altijd Frank. Dat
-kan alleen achter het demowachtwoord: zonder `DEMO_PASSWORD` geeft Yuzu met
-een echte database geen toegang.
+Met een database log je in met e-mail en wachtwoord. De eerste keer stelt de
+eigenaar (in de demo frank@kingdo.nl) op /inloggen zijn wachtwoord in; dat
+kan alleen zolang niemand een wachtwoord heeft en de site achter
+`DEMO_PASSWORD` staat. Collega's nodig je uit via Beheer → Gebruikers met een
+eenmalige link.
 
 Zonder `DATABASE_URL` draait de demo op een tijdelijke database per
 serverinstantie. Dat geeft af en toe een 404 en begint geregeld opnieuw.

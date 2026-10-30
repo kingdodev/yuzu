@@ -19,17 +19,11 @@ describe("databaseverbinding", () => {
 });
 
 describe("demogebruiker", () => {
-  it("is Frank zonder database", () => {
+  it("is Frank alleen in de lokale demo zonder database", () => {
     expect(usesDemoSession({})).toBe(true);
-  });
-
-  it("is Frank met database, alleen achter het demowachtwoord", () => {
+    expect(usesDemoSession({ DATABASE_URL: "postgres://x" })).toBe(false);
     expect(
       usesDemoSession({ DATABASE_URL: "postgres://x", DEMO_PASSWORD: "geheim" }),
-    ).toBe(true);
-    expect(usesDemoSession({ DATABASE_URL: "postgres://x" })).toBe(false);
-    expect(usesDemoSession({ DATABASE_URL: "postgres://x", DEMO_PASSWORD: "  " })).toBe(
-      false,
-    );
+    ).toBe(false);
   });
 });

@@ -31,6 +31,8 @@ export function listMembers() {
         allShops: s.memberships.allShops,
         active: s.memberships.active,
         since: s.memberships.createdAt,
+        passwordSetAt: s.users.passwordSetAt,
+        lastLoginAt: s.users.lastLoginAt,
       })
       .from(s.memberships)
       .innerJoin(s.users, eq(s.users.id, s.memberships.userId))

@@ -36,6 +36,20 @@
       "when": 1793365181282,
       "tag": "0004_bijlagen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793367012814,
+      "tag": "0005_inloggen",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793367014033,
+      "tag": "0006_inloggen_afschermen",
+      "breakpoints": true
     }
   ]
 }

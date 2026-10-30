@@ -1,6 +1,8 @@
-import { Search } from "lucide-react";
+import { LogOut, Search, UserRound } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import { usesDemoSession } from "@/db/connection";
+import { logout } from "@/server/actions/auth";
 import { getSession } from "@/server/session";
 import { SearchBox, SearchField } from "./search-box";
 import { ThemeSwitch } from "./theme-switch";
@@ -47,20 +49,51 @@ async function CurrentUser() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const demo = !process.env.DATABASE_URL || Boolean(process.env.DEMO_PASSWORD?.trim());
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="hidden text-right leading-tight sm:block">
-        <div className="text-[13px] font-medium text-white">{session.name}</div>
-        <div className="text-[12px] text-topbar-ink/70">
-          {session.organizationName}, demo-omgeving
-        </div>
-      </div>
-      <span
-        aria-hidden
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5c6ac4] text-[12.5px] font-semibold text-white"
+    <details className="group relative">
+      <summary
+        className="flex cursor-pointer list-none items-center gap-2.5 rounded-lg px-1.5 py-1 hover:bg-white/10"
+        aria-label="Accountmenu"
       >
-        {initials}
-      </span>
-    </div>
+        <div className="hidden text-right leading-tight sm:block">
+          <div className="text-[13px] font-medium text-white">{session.name}</div>
+          <div className="text-[12px] text-topbar-ink/70">
+            {session.organizationName}
+            {demo ? ", demo-omgeving" : ""}
+          </div>
+        </div>
+        <span
+          aria-hidden
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5c6ac4] text-[12.5px] font-semibold text-white"
+        >
+          {initials}
+        </span>
+      </summary>
+      <div className="absolute right-0 top-11 z-40 w-56 overflow-hidden rounded-xl bg-panel py-1 text-ink shadow-lg ring-1 ring-line">
+        <div className="border-b border-line px-3.5 py-2.5">
+          <div className="truncate text-[13.5px] font-medium">{session.name}</div>
+          <div className="truncate text-[12.5px] text-muted">{session.email}</div>
+        </div>
+        <Link
+          href="/account"
+          className="flex items-center gap-2 px-3.5 py-2 text-[14px] hover:bg-hover"
+        >
+          <UserRound className="h-4 w-4 text-muted" aria-hidden />
+          Mijn account
+        </Link>
+        {!usesDemoSession() && (
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[14px] hover:bg-hover"
+            >
+              <LogOut className="h-4 w-4 text-muted" aria-hidden />
+              Uitloggen
+            </button>
+          </form>
+        )}
+      </div>
+    </details>
   );
 }

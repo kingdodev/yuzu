@@ -33,12 +33,11 @@ function isLocal(url: string): boolean {
 /**
  * Is de ingelogde gebruiker altijd Frank (de demogebruiker)?
  *
- * Zolang inloggen nog niet gebouwd is, mag dat alleen als er geen echte
- * database is, of als de hele site achter het demowachtwoord zit
- * (DEMO_PASSWORD, zie src/proxy.ts). Zo staat een echte database nooit open.
+ * Alleen in de lokale demo zonder database. Met een echte database logt
+ * iedereen in met een eigen account.
  */
 export function usesDemoSession(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
-  return !env.DATABASE_URL || Boolean(env.DEMO_PASSWORD?.trim());
+  return !env.DATABASE_URL;
 }
