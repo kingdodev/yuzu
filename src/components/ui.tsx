@@ -100,7 +100,7 @@ export function YuzuMark({ size = 22 }: { size?: number }) {
         cy="12"
         r="7.2"
         fill="none"
-        stroke="var(--yuzu-ink)"
+        stroke="var(--on-yuzu)"
         strokeOpacity=".28"
         strokeWidth="1"
       />
@@ -111,7 +111,7 @@ export function YuzuMark({ size = 22 }: { size?: number }) {
           y1="12"
           x2={12 + 7.2 * Math.cos((deg * Math.PI) / 180)}
           y2={12 + 7.2 * Math.sin((deg * Math.PI) / 180)}
-          stroke="var(--yuzu-ink)"
+          stroke="var(--on-yuzu)"
           strokeOpacity=".28"
           strokeWidth="1"
         />

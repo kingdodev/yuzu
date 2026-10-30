@@ -55,8 +55,53 @@
   --shop-es-tint: #fee9e8;
 }
 
+/* Donker: gekozen in Yuzu, of het systeem staat op donker en er is niets gekozen. */
+:root[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --panel: #262626;
+  --panel-sunk: #202020;
+  --nav: #202020;
+  --topbar: #0f0f0f;
+  --topbar-ink: #e3e3e3;
+  --ink: #ececec;
+  --ink-soft: #cfcfcf;
+  --muted: #a3a3a3;
+  --line: #383838;
+  --line-strong: #4a4a4a;
+  --input: #6b6b6b;
+  --primary: #f1f1f1;
+  --primary-hover: #ffffff;
+  --on-primary: #1a1a1a;
+  --selected: #303030;
+  --hover: #2c2c2c;
+  --link: #7fb5ff;
+  --focus: #7fb5ff;
+  --success: #7ee2a8;
+  --success-tint: #12331f;
+  --info-tint: #1c2a3d;
+  --info-line: #2c4466;
+  --chart: #7fb5ff;
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --yuzu: #e6d63b;
+  --yuzu-soft: #2c2a12;
+  --yuzu-ink: #f1e88c;
+  --alert: #ffa294;
+  --alert-tint: #3a1f1c;
+  --note: #2d2616;
+  --note-line: #4d4126;
+
+  --shop-nl: #ffb36b;
+  --shop-nl-tint: #3a2618;
+  --shop-be: #e3e3e3;
+  --shop-be-tint: #383838;
+  --shop-fr: #8cc8ff;
+  --shop-fr-tint: #1c2a3d;
+  --shop-es: #ffa294;
+  --shop-es-tint: #3c1e21;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1a1a1a;
     --panel: #262626;
     --panel-sunk: #202020;
@@ -137,6 +182,15 @@
 
 html {
   font-size: 15px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
 }
 
 body {
@@ -245,9 +299,12 @@ body {
   }
 }
 
+:root[data-theme="dark"] :is(.btn-primary, .btn-secondary) {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  background-image: none;
+}
 @media (prefers-color-scheme: dark) {
-  .btn-primary,
-  .btn-secondary {
+  :root:not([data-theme="light"]) :is(.btn-primary, .btn-secondary) {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
     background-image: none;
   }

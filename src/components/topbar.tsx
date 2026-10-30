@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { getSession } from "@/server/session";
+import { ThemeSwitch } from "./theme-switch";
 import { YuzuMark } from "./ui";
 
 /** Donkere balk bovenin, met het logo links en de ingelogde gebruiker rechts. */
@@ -13,6 +14,7 @@ export function Topbar({ menu }: { menu?: React.ReactNode }) {
         </span>
       </div>
       <div className="ml-auto flex items-center gap-3">
+        <ThemeSwitch />
         <Suspense fallback={null}>
           <CurrentUser />
         </Suspense>
