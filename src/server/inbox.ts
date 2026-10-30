@@ -16,11 +16,16 @@ import { attachmentsForTicket } from "@/db/repositories/attachments";
 import { searchTickets } from "@/db/repositories/search";
 import * as s from "@/db/schema";
 import { canAssignOthers, canWorkTickets } from "@/domain/permissions";
-import { parseSearchQuery } from "@/domain/search";
+import { orderNumberToLookup, parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
 import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
 import { cache } from "react";
-import { commerceFor, orderContext } from "@/integrations/commerce";
+import {
+  commerceClients,
+  commerceFor,
+  lookupOrder,
+  orderContext,
+} from "@/integrations/commerce";
 import { asTenant } from "./session";
 
 import type { TicketStatus } from "@/domain/tickets";
@@ -234,8 +239,26 @@ export async function getTicketDetail(ticketId: string) {
 export async function searchInbox(raw: string | null | undefined) {
   const query = parseSearchQuery(raw);
   if (!query) return null;
-  const results = await asTenant((t) => searchTickets(t, query));
-  return { query, results };
+  const orderNumber = orderNumberToLookup(query);
+  // Lijkt het op een ordernummer: ook in de webshop kijken van wie de order is
+  // (buiten de databasetransactie, zodat die niet op de webshop wacht).
+  const lookup = orderNumber
+    ? await lookupOrder(await asTenant((t) => commerceClients(t)), orderNumber)
+    : null;
+  const emails = (lookup?.matches ?? []).flatMap((m) => (m.email ? [m.email] : []));
+  return asTenant(async (t) => {
+    const results = await searchTickets(t, query, emails);
+    return {
+      query,
+      results,
+      orders: lookup
+        ? {
+            numbers: [...new Set(lookup.matches.map((m) => m.number))],
+            failed: lookup.failed,
+          }
+        : null,
+    };
+  });
 }
 
 export type TicketDetail = NonNullable<Awaited<ReturnType<typeof getTicketDetail>>>;

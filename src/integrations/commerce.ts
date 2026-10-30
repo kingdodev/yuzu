@@ -14,7 +14,11 @@ import type { TenantTx } from "@/db/tenant";
 import { createMagentoClient, MagentoError } from "./magento/api";
 import { demoMagento } from "./magento/demo";
 import { connectionFrom as magentoConnectionFrom } from "./magento/index";
-import type { CustomerContext, MagentoClient as CommerceClient } from "./magento/types";
+import type {
+  CustomerContext,
+  MagentoClient as CommerceClient,
+  OrderMatch,
+} from "./magento/types";
 import { ShopifyError } from "./shopify/api";
 import {
   createShopifyClient,
@@ -101,6 +105,79 @@ export async function commerceFor(
   if (magento?.status === "demo")
     return { state: "demo", platform: "Magento", client: demoMagento };
   return { state: "not_configured" };
+}
+
+/**
+ * Alle gekoppelde webshops van de organisatie (voor zoeken op ordernummer).
+ * Zonder echte koppeling: de demo, als die aan staat.
+ */
+export async function commerceClients(
+  t: TenantTx,
+): Promise<{ platform: Platform; client: CommerceClient }[]> {
+  const [magento, shopify] = await Promise.all([
+    getIntegration(t, "magento"),
+    getIntegration(t, "shopify"),
+  ]);
+  const out: { platform: Platform; client: CommerceClient }[] = [];
+  if (magento && linked(magento.status) && magento.secrets && magento.settings.baseUrl) {
+    try {
+      const connection = magentoConnectionFrom(
+        t.organizationId,
+        magento.settings,
+        magento.secrets,
+      );
+      out.push({
+        platform: "Magento",
+        client: createMagentoClient(connection, await shopStoreIds(t)),
+      });
+    } catch {
+      // Niet te ontsleutelen: overslaan; het ticketpaneel meldt dit al.
+    }
+  } else if (magento?.status === "demo") {
+    out.push({ platform: "Magento", client: demoMagento });
+  }
+  if (
+    shopify &&
+    linked(shopify.status) &&
+    shopify.secrets &&
+    shopify.settings.shopDomain
+  ) {
+    try {
+      const connection = shopifyConnectionFrom(
+        t.organizationId,
+        shopify.settings,
+        shopify.secrets,
+      );
+      out.push({ platform: "Shopify", client: createShopifyClient(connection) });
+    } catch {
+      // idem
+    }
+  }
+  return out;
+}
+
+export type OrderLookup = {
+  matches: (OrderMatch & { platform: Platform })[];
+  /** Webshops die niet antwoordden. */
+  failed: Platform[];
+};
+
+/** Zoek een ordernummer in alle gekoppelde webshops tegelijk. */
+export async function lookupOrder(
+  clients: { platform: Platform; client: CommerceClient }[],
+  number: string,
+): Promise<OrderLookup> {
+  const results = await Promise.allSettled(
+    clients.map(async ({ platform, client }) =>
+      (await client.findOrders(number)).map((m) => ({ ...m, platform })),
+    ),
+  );
+  return {
+    matches: results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])),
+    failed: clients
+      .filter((_, i) => results[i].status === "rejected")
+      .map((c) => c.platform),
+  };
 }
 
 // --- Korte cache ----------------------------------------------------------

@@ -265,6 +265,20 @@ export function createShopifyClient(
 ): CommerceClient {
   const api = createShopifyApi(connection, deps);
   return {
+    async findOrders(number) {
+      const bare = number.replace(/^#/, "");
+      if (!/^[\w-]{1,32}$/.test(bare)) return [];
+      const data = await api.query<{ orders: { nodes: ShopifyOrder[] } }>(ORDERS_QUERY, {
+        query: `name:${quote(`#${bare}`)} OR name:${quote(bare)}`,
+        first: 5,
+      });
+      return data.orders.nodes.map((o) => ({
+        number: o.name,
+        email: o.email ?? null,
+        shopCode: null,
+      }));
+    },
+
     async getCustomerContext(
       shopCode,
       email,

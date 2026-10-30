@@ -243,6 +243,23 @@ describe("Magento-koppeling (tegen een nagebootste Magento)", () => {
     expect(listCalls.every((c) => c.fields?.startsWith("items["))).toBe(true);
   });
 
+  it("vindt een order op nummer, ook zonder voorloopnullen", async () => {
+    const m = fake();
+    const client = createMagentoClient(
+      connection,
+      { nl: 1, fr: 3 },
+      { fetch: m.fetch, resolve: publicDns },
+    );
+    expect(await client.findOrders("12900")).toEqual([
+      { number: "000012900", email: "sanne@example.nl", shopCode: "fr" },
+    ]);
+    expect(await client.findOrders("#000012871")).toMatchObject([
+      { number: "000012871", shopCode: "nl" },
+    ]);
+    expect(await client.findOrders("99999")).toEqual([]);
+    expect(await client.findOrders("x' or 1=1")).toEqual([]);
+  });
+
   it("zonder gekoppelde store view: orders uit alle shops", async () => {
     const m = fake();
     const client = createMagentoClient(

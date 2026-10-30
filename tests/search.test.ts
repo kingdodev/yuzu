@@ -5,7 +5,13 @@ import { createTicket } from "@/db/repositories/tickets";
 import * as s from "@/db/schema";
 import { withTenant } from "@/db/tenant";
 import type { Db } from "@/db/types";
-import { likePattern, parseSearchQuery, snippetAround } from "@/domain/search";
+import { demoMagento } from "@/integrations/magento/demo";
+import {
+  likePattern,
+  orderNumberToLookup,
+  parseSearchQuery,
+  snippetAround,
+} from "@/domain/search";
 import { createTestDb, seedOrganization } from "./helpers/db";
 
 describe("zoekopdracht lezen", () => {
@@ -27,6 +33,22 @@ describe("zoekopdracht lezen", () => {
     expect(parseSearchQuery("   ")).toBeNull();
     expect(parseSearchQuery("a")).toBeNull();
     expect(parseSearchQuery('"x"')).toBeNull();
+  });
+
+  it("herkent ordernummers om in de webshop op te zoeken", () => {
+    const lookup = (q: string) => orderNumberToLookup(parseSearchQuery(q)!);
+    expect(lookup("000012844")).toBe("000012844");
+    expect(lookup("#1001")).toBe("1001");
+    expect(lookup("NL-12844")).toBe("NL-12844");
+    expect(lookup("123")).toBeNull(); // te kort: eerder een ticketnummer
+    expect(lookup("plaid 12844")).toBeNull();
+    expect(lookup("lotte@example.nl")).toBeNull();
+  });
+
+  it("de demo vindt orders op nummer", async () => {
+    expect(await demoMagento.findOrders("12844")).toMatchObject([
+      { number: "000012844", shopCode: "be" },
+    ]);
   });
 
   it("zoekt % en _ letterlijk", () => {
@@ -135,6 +157,19 @@ describe("zoeken in tickets", () => {
     expect((await search(org, "lotte@example")).map((r) => r.id)).toEqual([ids.pakket]);
     expect((await search(org, "12790")).map((r) => r.id)).toEqual([ids.plaid]);
     expect((await search(org, "3svbs1234567")).map((r) => r.id)).toEqual([ids.pakket]);
+  });
+
+  it("vindt ook tickets van de klant van een order uit de webshop", async () => {
+    const q = parseSearchQuery("000099999")!;
+    const found = await withTenant(db, org.org.id, (t) =>
+      searchTickets(t, q, ["LOTTE@example.nl"]),
+    );
+    expect(found.map((r) => r.id)).toEqual([ids.pakket]);
+    // Niet over organisaties heen.
+    const elsewhere = await withTenant(db, other.org.id, (t) =>
+      searchTickets(t, q, ["lotte@example.nl"]),
+    );
+    expect(elsewhere).toEqual([]);
   });
 
   it("zoekt ook in interne notities, en % letterlijk", async () => {

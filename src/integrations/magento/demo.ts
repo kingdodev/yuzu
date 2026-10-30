@@ -492,6 +492,14 @@ function build(seed: Seed, index: number): MagentoOrder {
 }
 
 export const demoMagento: MagentoClient = {
+  async findOrders(number) {
+    const want = number.replace(/^#/, "").replace(/^0+/, "");
+    return Object.entries(ORDERS).flatMap(([email, seeds]) =>
+      seeds
+        .filter((s) => s.number.replace(/^0+/, "") === want)
+        .map((s) => ({ number: s.number, email, shopCode: s.shopCode })),
+    );
+  },
   async getCustomerContext(shopCode, email) {
     const seeds = (ORDERS[email] ?? []).filter((o) => o.shopCode === shopCode);
     const orders = seeds.map((s) => build(s, Number(s.number.slice(-4))));

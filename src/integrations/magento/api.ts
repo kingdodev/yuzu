@@ -264,7 +264,38 @@ export function createMagentoClient(
   deps: ApiDeps = {},
 ): MagentoClient {
   const api = createMagentoApi(connection, deps);
+  const shopOfStore = new Map(
+    Object.entries(storeIds)
+      .filter(([, id]) => id !== null)
+      .map(([code, id]) => [id as number, code]),
+  );
   return {
+    async findOrders(number) {
+      const value = number.replace(/^#/, "");
+      if (!/^[\w-]{1,32}$/.test(value)) return [];
+      // Magento-nummers hebben vaak voorloopnullen (000012844); "12844" moet ook werken.
+      const candidates = [value];
+      if (/^\d{1,8}$/.test(value)) candidates.push(value.padStart(9, "0"));
+      const result = await api.get<{ items?: RawOrder[] }>(
+        "orders",
+        searchCriteria({
+          filters: [
+            {
+              field: "increment_id",
+              value: [...new Set(candidates)].join(","),
+              condition: "in",
+            },
+          ],
+          pageSize: 5,
+        }).concat([["fields", "items[increment_id,customer_email,store_id]"]]),
+      );
+      return (result.items ?? []).map((o) => ({
+        number: o.increment_id,
+        email: o.customer_email ?? null,
+        shopCode: o.store_id != null ? (shopOfStore.get(o.store_id) ?? null) : null,
+      }));
+    },
+
     async getCustomerContext(
       shopCode,
       email,

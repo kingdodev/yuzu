@@ -37,6 +37,17 @@ export function parseSearchQuery(raw: string | null | undefined): SearchQuery | 
   return { text, terms, ticketNumber };
 }
 
+/**
+ * Lijkt de zoekopdracht op een ordernummer? Dan zoekt Yuzu ook in de
+ * webshop wie die order geplaatst heeft. Eén woord, minstens vier cijfers,
+ * eventueel met # of een korte prefix ("#1001", "000012844", "NL-12844").
+ */
+export function orderNumberToLookup(query: SearchQuery): string | null {
+  if (query.text.includes(" ")) return null;
+  const m = /^#?([A-Za-z]{0,4}-?\d{4,12})$/.exec(query.text);
+  return m ? m[1] : null;
+}
+
 /** Een LIKE-patroon dat de tekst letterlijk zoekt (% en _ tellen niet als joker). */
 export function likePattern(term: string): string {
   return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;

@@ -62,7 +62,18 @@ export type CustomerContext = {
   orders: MagentoOrder[];
 };
 
+/** Een order gevonden op nummer: van wie is hij? */
+export type OrderMatch = {
+  number: string;
+  email: string | null;
+  /** Shop in Yuzu, als die bekend is. */
+  shopCode: string | null;
+};
+
 export interface MagentoClient {
+  /** Orders met dit nummer (voor zoeken). Leeg als er geen is. */
+  findOrders(number: string): Promise<OrderMatch[]>;
+
   /**
    * Klant en laatste orders bij een e-mailadres, binnen één shop. Orders die
    * aan het ticket gekoppeld zijn (bijv. een ordernummer uit de mail) komen

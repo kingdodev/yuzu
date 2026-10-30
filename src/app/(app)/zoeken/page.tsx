@@ -44,6 +44,7 @@ async function Results({
             : "Zoek op naam of e-mailadres van de klant, ticketnummer, ordernummer, onderwerp of tekst uit een mail of notitie."
         }
       />
+      {found?.orders && <OrderNote orders={found.orders} count={found.results.length} />}
       {/* Op een telefoon staat het zoekveld niet in de bovenbalk. */}
       <div className="mb-5 rounded-lg bg-topbar p-2 sm:hidden">
         <SearchField key={raw} defaultValue={raw} />
@@ -65,5 +66,34 @@ async function Results({
         </Panel>
       )}
     </>
+  );
+}
+
+function OrderNote({
+  orders,
+  count,
+}: {
+  orders: { numbers: string[]; failed: string[] };
+  count: number;
+}) {
+  const label = orders.numbers.join(", ");
+  return (
+    <div className="mb-4 space-y-1 text-[13.5px]">
+      {orders.numbers.length > 0 && (
+        <p className="text-ink-soft">
+          {orders.numbers.length === 1 ? "Order" : "Orders"} {label} gevonden in de
+          webshop.{" "}
+          {count > 0
+            ? "De tickets van die klant staan hieronder."
+            : "Deze klant heeft nog geen ticket in Yuzu."}
+        </p>
+      )}
+      {orders.failed.length > 0 && (
+        <p role="status" className="text-alert">
+          {orders.failed.join(" en ")} gaf geen antwoord; daar is niet op ordernummer
+          gezocht.
+        </p>
+      )}
+    </div>
   );
 }

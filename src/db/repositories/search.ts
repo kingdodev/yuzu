@@ -25,12 +25,19 @@ function termCondition(term: string): SQL {
  * ergens voorkomen: in het onderwerp, de naam of het e-mailadres van de
  * klant, een gekoppeld ordernummer, of de tekst van een bericht of notitie.
  */
-export async function searchTickets(t: TenantTx, query: SearchQuery) {
+export async function searchTickets(
+  t: TenantTx,
+  query: SearchQuery,
+  /** Ook tickets van deze klanten (bijv. van een order die in de webshop gevonden is). */
+  alsoEmails: readonly string[] = [],
+) {
   const conditions = query.terms.map(termCondition);
-  const where =
-    query.ticketNumber !== null
-      ? or(eq(tickets.number, query.ticketNumber), and(...conditions))
-      : and(...conditions);
+  const emails = [...new Set(alsoEmails.map((e) => e.toLowerCase()))];
+  const where = or(
+    query.ticketNumber !== null ? eq(tickets.number, query.ticketNumber) : undefined,
+    and(...conditions),
+    emails.length ? inArray(sql`lower(${contacts.email})`, emails) : undefined,
+  );
   if (!where) return [];
 
   const rows = await t.tx

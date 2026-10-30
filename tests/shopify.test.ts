@@ -133,6 +133,16 @@ describe("Shopify-koppeling (tegen een nagebootste Shopify)", () => {
     expect(f.tokenRequests()).toBe(1);
   });
 
+  it("vindt een order op nummer, met of zonder #", async () => {
+    const f = fake();
+    const client = createShopifyClient(app, { fetch: f.fetch });
+    expect(await client.findOrders("1003")).toEqual([
+      { number: "#1003", email: "partner@example.nl", shopCode: null },
+    ]);
+    expect(await client.findOrders("#1001")).toMatchObject([{ number: "#1001" }]);
+    expect(await client.findOrders("4040")).toEqual([]);
+  });
+
   it("haalt orders van de klant op, plus gekoppelde ordernummers, met tracking", async () => {
     const f = fake();
     const ctx = await createShopifyClient(app, { fetch: f.fetch }).getCustomerContext(
