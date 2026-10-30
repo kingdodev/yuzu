@@ -1,6 +1,9 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import * as s from "@/db/schema";
+import { getIntegration, listShopsForMapping } from "@/db/repositories/integrations";
+import type { StoreView } from "@/integrations/magento/mapping";
+import { isEncryptionConfigured } from "@/lib/secrets";
 import { asAdmin, asOwner } from "./session";
 
 export function listShops() {
@@ -281,6 +284,34 @@ export function exportContact(email: string) {
             body: m.body,
           })),
       })),
+    };
+  });
+}
+
+/** Alles voor het Magento-blok op de koppelingenpagina, zonder de sleutels zelf. */
+export function getMagentoAdmin() {
+  return asOwner(async (t) => {
+    const [row, shops] = await Promise.all([
+      getIntegration(t, "magento"),
+      listShopsForMapping(t),
+    ]);
+    const settings = row?.settings ?? {};
+    let storeViews: StoreView[] = [];
+    try {
+      storeViews = settings.storeViews ? JSON.parse(settings.storeViews) : [];
+    } catch {
+      storeViews = [];
+    }
+    return {
+      status: row?.status ?? "not_configured",
+      hasSecrets: Boolean(row?.secrets),
+      baseUrl: settings.baseUrl ?? "",
+      adminUrl: settings.adminUrl ?? "",
+      lastCheckedAt: row?.lastCheckedAt ?? null,
+      lastError: row?.lastError ?? null,
+      storeViews,
+      shops,
+      encryptionReady: isEncryptionConfigured(),
     };
   });
 }

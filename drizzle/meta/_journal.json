@@ -64,6 +64,13 @@
       "when": 1793369217208,
       "tag": "0008_gebruikers_afschermen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793387906878,
+      "tag": "0009_koppeling_geheimen",
+      "breakpoints": true
     }
   ]
 }

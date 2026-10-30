@@ -629,8 +629,14 @@ export const integrations = pgTable(
     status: integrationStatusEnum("status").notNull().default("not_configured"),
     /** Niet-geheime instellingen, bijv. regio of basis-URL. */
     settings: jsonb("settings").$type<Record<string, string>>().notNull().default({}),
+    /**
+     * Sleutels en wachtwoorden, versleuteld met YUZU_ENCRYPTION_KEY
+     * (src/lib/secrets.ts). Nooit naar de browser sturen.
+     */
+    secrets: text("secrets"),
     lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
     lastError: text("last_error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.organizationId, t.kind] })],
 );

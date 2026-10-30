@@ -90,6 +90,18 @@ door) en downloaden via `/bijlagen/[id]`, dat RLS controleert en alleen
 afbeeldingen en pdf's in de browser toont (`servingFor`). Wie bijlagen in de
 database wist, wist ook de bestanden (zie `deleteAttachmentsOfTickets`).
 
+## Koppelingen (Magento)
+
+Elke organisatie koppelt Magento zelf in Beheer → Koppelingen (alleen de
+eigenaar). Sleutels staan versleuteld in `integrations.secrets`
+(`src/lib/secrets.ts`, AES-256-GCM met `YUZU_ENCRYPTION_KEY`, de organisatie
+als context), nooit in omgevingsvariabelen en nooit terug naar de browser.
+De client (`src/integrations/magento/api.ts`) doet alleen GET-verzoeken met
+OAuth 1.0a-ondertekening van een Magento-integratie, controleert de URL tegen
+SSRF (`src/lib/safe-url.ts`) en volgt geen redirects. `magentoFor(t)` kiest de
+echte koppeling, de demo of geen. Tests draaien tegen
+`tests/helpers/fake-magento.ts`.
+
 ## Structuur
 
 - `src/app/(app)/inbox` — inbox en ticketscherm

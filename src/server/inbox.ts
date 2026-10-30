@@ -20,7 +20,7 @@ import { parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
 import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
 import { cache } from "react";
-import { demoMagento } from "@/integrations/magento/demo";
+import { customerContext, magentoFor } from "@/integrations/magento";
 import { asTenant } from "./session";
 
 import type { TicketStatus } from "@/domain/tickets";
@@ -213,12 +213,17 @@ export async function getTicketDetail(ticketId: string) {
       attachmentsForTicket(t, ticketId),
     ]);
 
-    const magento = await demoMagento.getCustomerContext(
+    const linked = new Set(orderRows.map((o) => o.orderNumber));
+    const magento = await customerContext(
+      t.organizationId,
+      await magentoFor(t),
       ticket.shop.code,
       ticket.contact.email,
+      [...linked],
     );
-    const linked = new Set(orderRows.map((o) => o.orderNumber));
-    const orders = [...magento.orders].sort((a, b) => {
+    const fetched =
+      "context" in magento ? magento.context : { customer: null, orders: [] };
+    const orders = [...fetched.orders].sort((a, b) => {
       const la = linked.has(a.number) ? 0 : 1;
       const lb = linked.has(b.number) ? 0 : 1;
       return la - lb || b.createdAt.getTime() - a.createdAt.getTime();
@@ -232,8 +237,10 @@ export async function getTicketDetail(ticketId: string) {
       tags: tagRows,
       allTags,
       linkedOrders: [...linked],
-      customer: magento.customer,
+      customer: fetched.customer,
       orders,
+      magentoState: magento.state,
+      magentoError: magento.state === "error" ? magento.message : null,
       agents,
       templates: templateRows,
       otherTickets,

@@ -55,10 +55,21 @@ export function CustomerPanel({
           ) : (
             <>
               <dt className="text-muted">Magento</dt>
-              <dd>Geen orders gevonden</dd>
+              <dd>
+                {detail.magentoState === "not_configured"
+                  ? "Nog niet gekoppeld"
+                  : detail.magentoState === "error"
+                    ? "Niet bereikbaar"
+                    : "Geen orders gevonden"}
+              </dd>
             </>
           )}
         </dl>
+        {detail.magentoError && (
+          <p role="status" className="mt-2 text-[13px] text-alert">
+            {detail.magentoError}
+          </p>
+        )}
       </section>
 
       {orders.length > 0 && (
@@ -103,30 +114,43 @@ export function CustomerPanel({
                   ))}
                 </ul>
 
-                {o.shipments.map((sh) => (
-                  <a
-                    key={sh.trackingNumber}
-                    href={sh.trackingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 flex items-start gap-2 rounded-md bg-panel-sunk px-2 py-1.5 text-[13.5px] hover:text-link"
-                  >
-                    <Truck
-                      className="mt-[2px] h-3.5 w-3.5 shrink-0 text-muted"
-                      aria-hidden
-                    />
-                    <span className="min-w-0">
-                      {sh.carrier}, verzonden {formatDate(sh.shippedAt)}
-                      <span className="block break-all text-[12.5px] text-muted">
-                        {sh.trackingNumber}
+                {o.shipments.map((sh) => {
+                  const body = (
+                    <>
+                      <Truck
+                        className="mt-[2px] h-3.5 w-3.5 shrink-0 text-muted"
+                        aria-hidden
+                      />
+                      <span className="min-w-0">
+                        {sh.carrier}, verzonden {formatDate(sh.shippedAt)}
+                        <span className="block break-all text-[12.5px] text-muted">
+                          {sh.trackingNumber}
+                        </span>
                       </span>
-                    </span>
-                    <ExternalLink
-                      className="ml-auto mt-[2px] h-3.5 w-3.5 shrink-0"
-                      aria-label="Open tracking"
-                    />
-                  </a>
-                ))}
+                    </>
+                  );
+                  const box =
+                    "mt-2 flex items-start gap-2 rounded-md bg-panel-sunk px-2 py-1.5 text-[13.5px]";
+                  return sh.trackingUrl ? (
+                    <a
+                      key={sh.trackingNumber}
+                      href={sh.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${box} hover:text-link`}
+                    >
+                      {body}
+                      <ExternalLink
+                        className="ml-auto mt-[2px] h-3.5 w-3.5 shrink-0"
+                        aria-label="Open tracking"
+                      />
+                    </a>
+                  ) : (
+                    <div key={sh.trackingNumber} className={box}>
+                      {body}
+                    </div>
+                  );
+                })}
                 {o.shipments.length === 0 && o.status === "processing" && (
                   <p className="mt-2 text-[13px] text-muted">Nog niet verzonden.</p>
                 )}
@@ -147,21 +171,25 @@ export function CustomerPanel({
                     {o.shippingAddress.postcode} {o.shippingAddress.city}
                   </span>
                 </div>
-                <a
-                  href={o.adminUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-[13px] text-link underline-offset-2 hover:underline"
-                >
-                  Open in Magento
-                  <ExternalLink className="h-3 w-3" aria-hidden />
-                </a>
+                {o.adminUrl && (
+                  <a
+                    href={o.adminUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[13px] text-link underline-offset-2 hover:underline"
+                  >
+                    Open in Magento
+                    <ExternalLink className="h-3 w-3" aria-hidden />
+                  </a>
+                )}
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-[12.5px] leading-relaxed text-muted">
-            Voorbeelddata. Zodra Magento gekoppeld is, staan hier de echte orders.
-          </p>
+          {detail.magentoState === "demo" && (
+            <p className="mt-3 text-[12.5px] leading-relaxed text-muted">
+              Voorbeelddata. Zodra Magento gekoppeld is, staan hier de echte orders.
+            </p>
+          )}
         </section>
       )}
 

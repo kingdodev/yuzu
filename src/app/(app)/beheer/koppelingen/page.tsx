@@ -1,6 +1,7 @@
-import { Bot, Mail, ShoppingBag } from "lucide-react";
+import { Bot, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
+import { MagentoSection } from "@/components/admin/magento-section";
 import { PageHeader, Panel, ShopBadge, Skeleton } from "@/components/ui";
 import { listIntegrations } from "@/server/admin";
 
@@ -18,7 +19,7 @@ export default function IntegrationsPage() {
     <>
       <PageHeader
         title="Koppelingen"
-        description="Yuzu praat met drie systemen: Mailgun voor e-mail, Magento voor orders en een AI-model voor concepten. Wachtwoorden en sleutels staan nooit in dit scherm; die zet je in de hostingomgeving."
+        description="Yuzu praat met drie systemen: Mailgun voor e-mail, Magento voor orders en een AI-model voor concepten. Sleutels vul je één keer in; Yuzu bewaart ze versleuteld en toont ze nooit meer."
       />
       <Suspense fallback={<Skeleton lines={12} />}>
         <Integrations />
@@ -126,41 +127,9 @@ async function Integrations() {
         />
       </Card>
 
-      <Card
-        icon={<ShoppingBag className={icon} aria-hidden />}
-        title="Magento 2"
-        status={integrations.magento?.status ?? "not_configured"}
-      >
-        <p className="text-ink-soft">
-          Eén koppeling voor alle shops, alleen lezen. Yuzu haalt orders, zendingen en
-          facturen op en schrijft niets naar de live shop.
-          {integrations.magento?.settings.version &&
-            ` Versie ${integrations.magento.settings.version}.`}
-        </p>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {shops.map((s) => (
-            <li
-              key={s.code}
-              className="flex items-center gap-2.5 rounded-lg border border-line px-3 py-2"
-            >
-              <ShopBadge code={s.code} />
-              <span className="min-w-0 flex-1 truncate">{s.name}</span>
-              <span className="tabular text-[13px] text-muted">
-                store {s.store ?? "?"}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <EnvList
-          vars={[
-            ["MAGENTO_BASE_URL", "Adres van de Magento-installatie"],
-            [
-              "MAGENTO_ACCESS_TOKEN",
-              "Token van de integratie (Systeem → Extensies → Integraties), alleen leesrechten",
-            ],
-          ]}
-        />
-      </Card>
+      <Suspense fallback={<Skeleton lines={8} />}>
+        <MagentoSection />
+      </Suspense>
 
       <Card
         icon={<Bot className={icon} aria-hidden />}
