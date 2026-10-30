@@ -3,9 +3,15 @@
 import { and, eq, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { changeTicketStatus, type Actor } from "@/db/repositories/tickets";
+import {
+  archiveTickets as archiveTicketRows,
+  changeTicketStatus,
+  type Actor,
+} from "@/db/repositories/tickets";
 import * as s from "@/db/schema";
-import { TICKET_STATUSES } from "@/domain/tickets";
+import { nextTicketAfter, TICKET_STATUSES } from "@/domain/tickets";
+import { isInboxView } from "@/domain/views";
+import { listTickets } from "../inbox";
 import { asTenant } from "../session";
 
 const uuid = z.string().uuid();
@@ -224,4 +230,52 @@ export async function toggleTicketTag(
   });
   refresh();
   return { ok: true };
+}
+
+export type ArchiveResult =
+  { ok: true; archived: number; nextHref: string } | { ok: false; error: string };
+
+/**
+ * Archiveer één ticket (op "opgelost") en geef het adres van het volgende
+ * ticket in dezelfde weergave terug, zodat je meteen verder kunt.
+ */
+export async function archiveTicket(
+  ticketId: string,
+  view: string,
+): Promise<ArchiveResult> {
+  const id = uuid.parse(ticketId);
+  if (!isInboxView(view)) return { ok: false, error: "Onbekende weergave" };
+  try {
+    const listIds = (await listTickets(view)).map((t) => t.id);
+    const nextId = nextTicketAfter(listIds, id);
+    const { archived } = await asTenant((t, session) =>
+      archiveTicketRows(t, [id], me(session.userId)),
+    );
+    refresh();
+    return {
+      ok: true,
+      archived: archived.length,
+      nextHref: nextId ? `/inbox/${view}/${nextId}` : `/inbox/${view}`,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Archiveren mislukt" };
+  }
+}
+
+/** Archiveer meerdere tickets tegelijk, bijvoorbeeld vanuit de lijst. */
+export async function archiveTickets(ticketIds: string[]): Promise<ActionResult> {
+  const ids = z.array(uuid).min(1).max(500).parse(ticketIds);
+  try {
+    const { archived, skipped } = await asTenant((t, session) =>
+      archiveTicketRows(t, ids, me(session.userId)),
+    );
+    refresh();
+    const n = archived.length;
+    const message =
+      `${n} ${n === 1 ? "ticket" : "tickets"} gearchiveerd` +
+      (skipped.length ? `, ${skipped.length} waren al opgelost` : "");
+    return { ok: true, message };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Archiveren mislukt" };
+  }
 }

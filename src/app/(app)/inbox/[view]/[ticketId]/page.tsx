@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ArchiveButton } from "@/components/ticket/archive-button";
 import { Composer } from "@/components/ticket/composer";
 import {
   AssigneeSelect,
@@ -12,6 +13,7 @@ import {
 import { CustomerPanel } from "@/components/ticket/customer-panel";
 import { Thread } from "@/components/ticket/thread";
 import { ShopBadge, Skeleton } from "@/components/ui";
+import { canArchive } from "@/domain/tickets";
 import { INTENT_LABELS, LANGUAGE_LABELS } from "@/lib/format";
 import { getTicketDetail, type TicketDetail } from "@/server/inbox";
 
@@ -78,9 +80,14 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
               <span>{INTENT_LABELS[ticket.intent] ?? ticket.intent}</span>
             )}
           </div>
-          <h1 className="mt-2 text-[1.45rem] font-semibold leading-snug tracking-[-0.01em]">
-            {ticket.subject}
-          </h1>
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+            <h1 className="min-w-0 text-[1.45rem] font-semibold leading-snug tracking-[-0.01em]">
+              {ticket.subject}
+            </h1>
+            {canArchive(ticket.status) && (
+              <ArchiveButton key={ticket.id} ticketId={ticket.id} view={view} />
+            )}
+          </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-2xl">
             <StatusSelect ticketId={ticket.id} status={ticket.status} />
             <AssigneeSelect

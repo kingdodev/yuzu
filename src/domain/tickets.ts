@@ -76,3 +76,21 @@ export function defaultStatusAfterReply(current: TicketStatus): TicketStatus {
 export function isActionable(status: TicketStatus): boolean {
   return status === "new" || status === "open";
 }
+
+/** Archiveren = op "opgelost" zetten. Kan vanuit elke status behalve opgelost en gesloten. */
+export function canArchive(status: TicketStatus): boolean {
+  return canTransition(status, "solved");
+}
+
+/**
+ * Welk ticket je na archiveren te zien krijgt: het volgende in de lijst,
+ * of het vorige als dit het laatste was. Null als de lijst verder leeg is.
+ */
+export function nextTicketAfter(
+  listIds: readonly string[],
+  currentId: string,
+): string | null {
+  const i = listIds.indexOf(currentId);
+  if (i === -1) return listIds[0] ?? null;
+  return listIds[i + 1] ?? listIds[i - 1] ?? null;
+}

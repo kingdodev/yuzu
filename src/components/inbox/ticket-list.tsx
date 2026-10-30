@@ -1,21 +1,31 @@
 import { Sparkles } from "lucide-react";
+import { canArchive } from "@/domain/tickets";
 import { EMPTY_VIEW_TEXT, VIEW_LABELS, type InboxView } from "@/domain/views";
 import { contactLabel, INTENT_LABELS, shortTime } from "@/lib/format";
 import { listTickets } from "@/server/inbox";
 import { ShopBadge, StatusPill } from "../ui";
 import { TicketRowLink } from "./ticket-row-link";
+import { TicketCheckbox, TicketSelection } from "./ticket-selection";
 
 export async function TicketList({ view }: { view: InboxView }) {
   const tickets = await listTickets(view);
+  const archivableIds = tickets.filter((t) => canArchive(t.status)).map((t) => t.id);
+  const selectable = archivableIds.length > 0;
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-baseline justify-between border-b border-line px-4 pb-3 pt-4">
-        <h1 className="text-lg font-semibold tracking-[-0.01em]">{VIEW_LABELS[view]}</h1>
-        <span className="tabular text-sm text-muted">
-          {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
-        </span>
-      </header>
-
+    <TicketSelection
+      ids={tickets.map((t) => t.id)}
+      archivableIds={archivableIds}
+      header={
+        <header className="flex items-baseline justify-between">
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">
+            {VIEW_LABELS[view]}
+          </h1>
+          <span className="tabular text-sm text-muted">
+            {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
+          </span>
+        </header>
+      }
+    >
       {tickets.length === 0 ? (
         <p className="px-4 py-10 text-[15px] leading-relaxed text-muted">
           {EMPTY_VIEW_TEXT[view]}
@@ -26,8 +36,13 @@ export async function TicketList({ view }: { view: InboxView }) {
             const unread = t.status === "new";
             const urgent = t.priority === "high" || t.priority === "urgent";
             return (
-              <li key={t.id}>
-                <TicketRowLink href={`/inbox/${view}/${t.id}`}>
+              <li key={t.id} className="relative">
+                {canArchive(t.status) && (
+                  <div className="absolute left-4 top-3.5 z-10 flex">
+                    <TicketCheckbox id={t.id} label={t.subject} />
+                  </div>
+                )}
+                <TicketRowLink href={`/inbox/${view}/${t.id}`} indent={selectable}>
                   <div className="flex items-center gap-2">
                     <ShopBadge code={t.shopCode} />
                     <span
@@ -75,6 +90,6 @@ export async function TicketList({ view }: { view: InboxView }) {
           })}
         </ul>
       )}
-    </div>
+    </TicketSelection>
   );
 }

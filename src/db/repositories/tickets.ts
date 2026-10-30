@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { canTransition, type TicketStatus } from "@/domain/tickets";
+import { canArchive, canTransition, type TicketStatus } from "@/domain/tickets";
 import { organizations, ticketEvents, tickets } from "../schema";
 import type { TenantTx } from "../tenant";
 
@@ -104,4 +104,30 @@ export async function changeTicketStatus(
     toValue: to,
     ...actorColumns(actor),
   });
+}
+
+/**
+ * Archiveer tickets: zet ze op "opgelost" met een event per ticket. Tickets
+ * die al opgelost of gesloten zijn, of niet bestaan, worden overgeslagen.
+ */
+export async function archiveTickets(
+  t: TenantTx,
+  ticketIds: readonly string[],
+  actor: Actor,
+) {
+  const archived: string[] = [];
+  const skipped: string[] = [];
+  for (const id of ticketIds) {
+    const [row] = await t.tx
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.id, id));
+    if (!row || !canArchive(row.status)) {
+      skipped.push(id);
+      continue;
+    }
+    await changeTicketStatus(t, id, "solved", actor);
+    archived.push(id);
+  }
+  return { archived, skipped };
 }
