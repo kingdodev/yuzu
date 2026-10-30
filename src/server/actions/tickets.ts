@@ -28,6 +28,8 @@ import {
   type TicketStatus,
 } from "@/domain/tickets";
 import { isInboxView, viewForStatus } from "@/domain/views";
+import { orderTemplateVars } from "@/domain/orders";
+import { getTicketCommerce } from "@/server/inbox";
 import { getFileStore } from "@/integrations/storage";
 import { listTickets } from "../inbox";
 import type { TenantTx } from "@/db/tenant";
@@ -470,4 +472,15 @@ export async function createOutboundTicket(
   }
   refresh();
   return { ok: true, href: `/inbox/${viewForStatus(created.status)}/${created.id}` };
+}
+
+/**
+ * Ordergegevens voor een sjabloon ({{ordernummer}}, {{vervoerder}},
+ * {{trackinglink}}). Apart opgehaald, zodat het ticket niet op de webshop wacht.
+ */
+export async function getOrderTemplateVars(
+  ticketId: string,
+): Promise<Record<string, string>> {
+  const data = await getTicketCommerce(uuid.parse(ticketId));
+  return orderTemplateVars(data?.orders ?? [], data?.linked ?? []);
 }

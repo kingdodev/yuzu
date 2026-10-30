@@ -2,7 +2,13 @@
 
 import { ExternalLink, Sparkles } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
-import { addNote, discardDraft, sendReply } from "@/server/actions/tickets";
+import { usesOrderVars } from "@/domain/orders";
+import {
+  addNote,
+  discardDraft,
+  getOrderTemplateVars,
+  sendReply,
+} from "@/server/actions/tickets";
 import { AttachmentPicker, type PickerState } from "../attachments/attachment-picker";
 
 type Draft = {
@@ -57,12 +63,21 @@ export function Composer(props: Props) {
     requestAnimationFrame(() => area.current?.focus());
   }
 
-  function insertTemplate(id: string) {
+  async function insertTemplate(id: string) {
     const tpl = templates.find((t) => t.id === id);
     if (!tpl) return;
+    let vars = templateVars;
+    if (usesOrderVars(tpl.body)) {
+      // Ordergegevens pas ophalen als een sjabloon ze nodig heeft.
+      try {
+        vars = { ...templateVars, ...(await getOrderTemplateVars(ticketId)) };
+      } catch {
+        // Webshop niet bereikbaar: de {{velden}} blijven staan om zelf in te vullen.
+      }
+    }
     const filled = tpl.body.replace(
       /\{\{(\w+)\}\}/g,
-      (_, key: string) => templateVars[key] ?? `{{${key}}}`,
+      (_, key: string) => vars[key] || `{{${key}}}`,
     );
     setText((current) => (current.trim() ? `${current}\n\n${filled}` : filled));
     area.current?.focus();

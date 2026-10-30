@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import * as s from "@/db/schema";
 import { getIntegration, listShopsForMapping } from "@/db/repositories/integrations";
 import type { StoreView } from "@/integrations/magento/mapping";
+import { shopifyShopCodes } from "@/integrations/shopify/index";
 import { isEncryptionConfigured } from "@/lib/secrets";
 import { asAdmin, asOwner } from "./session";
 
@@ -192,7 +193,10 @@ export function listIntegrations() {
           {
             ...r,
             // Alleen wat het overzicht nodig heeft; geen lijsten of interne instellingen.
-            summary: r.settings.baseUrl ?? null,
+            summary:
+              r.kind === "shopify"
+                ? r.settings.shopName || r.settings.shopDomain || null
+                : (r.settings.baseUrl ?? null),
           },
         ]),
       ),
@@ -332,6 +336,39 @@ export function getMagentoAdmin() {
       lastError: row?.lastError ?? null,
       storeViews,
       shops,
+      encryptionReady: isEncryptionConfigured(),
+    };
+  });
+}
+
+export function getShopifyAdmin() {
+  return asOwner(async (t) => {
+    const [row, magento, shops] = await Promise.all([
+      getIntegration(t, "shopify"),
+      getIntegration(t, "magento"),
+      listShopsForMapping(t),
+    ]);
+    const settings = row?.settings ?? {};
+    const magentoLinked =
+      Boolean(magento?.secrets) &&
+      (magento?.status === "connected" || magento?.status === "error");
+    return {
+      status: row?.status ?? "not_configured",
+      hasSecrets: Boolean(row?.secrets),
+      shopDomain: settings.shopDomain ?? "",
+      shopName: settings.shopName ?? "",
+      primaryDomain: settings.primaryDomain ?? "",
+      authMode: settings.authMode ?? "",
+      shopCodes: shopifyShopCodes(settings),
+      lastCheckedAt: row?.lastCheckedAt ?? null,
+      lastError: row?.lastError ?? null,
+      // Shops met een Magento-store view gebruiken Magento, niet Shopify.
+      shops: shops.map((s) => ({
+        code: s.code,
+        name: s.name,
+        domain: s.domain,
+        onMagento: magentoLinked && s.storeId !== null,
+      })),
       encryptionReady: isEncryptionConfigured(),
     };
   });

@@ -72,7 +72,7 @@ function matches(
 export function fakeMagento(options: FakeMagentoOptions) {
   const resources = options.resources ?? ALL;
   const restPath = options.restPath ?? "/rest/V1";
-  const calls: { method: string; path: string }[] = [];
+  const calls: { method: string; path: string; fields: string | null }[] = [];
 
   const fetch = async (
     input: string | URL | Request,
@@ -80,7 +80,7 @@ export function fakeMagento(options: FakeMagentoOptions) {
   ): Promise<Response> => {
     const url = new URL(String(input));
     const method = init?.method ?? "GET";
-    calls.push({ method, path: url.pathname });
+    calls.push({ method, path: url.pathname, fields: url.searchParams.get("fields") });
     if (method !== "GET") return json(405, { message: "Alleen lezen in deze test" });
     if (!url.pathname.startsWith(restPath + "/")) {
       return new Response("<html>Not found</html>", { status: 404 });

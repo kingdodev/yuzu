@@ -71,6 +71,13 @@
       "when": 1793387906878,
       "tag": "0009_koppeling_geheimen",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793390370239,
+      "tag": "0010_shopify",
+      "breakpoints": true
     }
   ]
 }

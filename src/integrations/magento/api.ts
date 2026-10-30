@@ -74,6 +74,19 @@ export function searchCriteria(input: {
   return q;
 }
 
+// Alleen de velden die Yuzu gebruikt (Magento's "fields"-parameter). Een
+// volledige order is al snel tientallen kilobytes; dit scheelt veel wachttijd.
+const ADDRESS_FIELDS = "firstname,lastname,street,postcode,city,country_id";
+export const ORDER_FIELDS =
+  "items[entity_id,increment_id,created_at,status,state,grand_total," +
+  "order_currency_code,total_due,customer_email,customer_firstname," +
+  "customer_lastname,customer_is_guest,customer_group_id,store_id," +
+  "items[item_id,sku,name,qty_ordered,price_incl_tax,price,parent_item_id]," +
+  `payment[method,additional_information],billing_address[${ADDRESS_FIELDS}],` +
+  `extension_attributes[shipping_assignments[shipping[address[${ADDRESS_FIELDS}]]]]]`;
+export const SHIPMENT_FIELDS =
+  "items[order_id,created_at,tracks[track_number,title,carrier_code,created_at]]";
+
 /** Lage-niveau toegang: één ondertekend GET-verzoek. */
 export function createMagentoApi(
   connection: MagentoConnection,
@@ -268,7 +281,7 @@ export function createMagentoClient(
             filters: [{ field: "customer_email", value: email }],
             sort: { field: "created_at", direction: "DESC" },
             pageSize: 20,
-          }),
+          }).concat([["fields", ORDER_FIELDS]]),
         ),
         numbers.length
           ? api.get<{ items?: RawOrder[] }>(
@@ -278,7 +291,7 @@ export function createMagentoClient(
                   { field: "increment_id", value: numbers.join(","), condition: "in" },
                 ],
                 pageSize: numbers.length,
-              }),
+              }).concat([["fields", ORDER_FIELDS]]),
             )
           : Promise.resolve({ items: [] }),
       ]);
@@ -308,7 +321,7 @@ export function createMagentoClient(
                   },
                 ],
                 pageSize: 100,
-              }),
+              }).concat([["fields", SHIPMENT_FIELDS]]),
             )
           ).items ?? [])
         : [];

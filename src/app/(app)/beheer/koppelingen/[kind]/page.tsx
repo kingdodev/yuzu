@@ -8,6 +8,7 @@ import {
   StatusDot,
 } from "@/components/admin/integrations/integration-icon";
 import { MagentoSection } from "@/components/admin/integrations/magento-section";
+import { ShopifySection } from "@/components/admin/integrations/shopify-section";
 import { Panel, Skeleton } from "@/components/ui";
 import {
   integrationInfo,
@@ -50,6 +51,8 @@ async function Detail({ params }: { params: Promise<{ kind: string }> }) {
       <Panel className="p-5">
         {info.kind === "magento" ? (
           <MagentoSection />
+        ) : info.kind === "shopify" ? (
+          <ShopifySection />
         ) : info.kind === "mailgun" ? (
           <MailgunDetails />
         ) : (

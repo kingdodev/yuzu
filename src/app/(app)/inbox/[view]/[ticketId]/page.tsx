@@ -10,6 +10,7 @@ import {
   StatusSelect,
   TagPicker,
 } from "@/components/ticket/controls";
+import { CommerceSection, CommerceSkeleton } from "@/components/ticket/commerce-section";
 import { CustomerPanel } from "@/components/ticket/customer-panel";
 import { Thread } from "@/components/ticket/thread";
 import { ShopBadge, Skeleton } from "@/components/ui";
@@ -48,14 +49,9 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
   const role = detail.session.role;
   const canWork = canWorkTickets(role);
   const language = ticket.language ?? shop.language;
-  const firstOrder =
-    detail.orders.find((o) => detail.linkedOrders.includes(o.number)) ?? detail.orders[0];
-  const shipment = firstOrder?.shipments[0];
+  // Ordervariabelen haalt de editor zelf op (getOrderTemplateVars).
   const templateVars: Record<string, string> = {
     voornaam: (contact.name ?? "").split(" ")[0] || "",
-    ordernummer: firstOrder?.number ?? "",
-    vervoerder: shipment?.carrier ?? "",
-    trackinglink: shipment?.trackingUrl ?? "",
     shopdomein: shop.domain,
     handtekening: shop.signature,
   };
@@ -151,7 +147,16 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
       </div>
 
       <aside className="shrink-0 border-t border-line bg-panel px-5 py-5 xl:w-[330px] xl:overflow-y-auto xl:border-l xl:border-t-0">
-        <CustomerPanel detail={detail} view={view} canEmail={canWork} />
+        <CustomerPanel
+          detail={detail}
+          view={view}
+          canEmail={canWork}
+          commerce={
+            <Suspense key={ticket.id} fallback={<CommerceSkeleton />}>
+              <CommerceSection ticketId={ticket.id} />
+            </Suspense>
+          }
+        />
       </aside>
     </div>
   );

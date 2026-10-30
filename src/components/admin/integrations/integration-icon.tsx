@@ -1,7 +1,7 @@
-import { Bot, Mail, ShoppingBag } from "lucide-react";
+import { Bot, Mail, ShoppingBag, Store } from "lucide-react";
 import type { IntegrationKind } from "@/domain/integrations";
 
-const ICONS = { magento: ShoppingBag, mailgun: Mail, ai: Bot } as const;
+const ICONS = { magento: ShoppingBag, shopify: Store, mailgun: Mail, ai: Bot } as const;
 
 export function IntegrationIcon({
   kind,

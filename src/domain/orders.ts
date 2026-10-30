@@ -52,3 +52,32 @@ function withoutPhoneNumbers(text: string): string {
     .replace(/(?<!\d)0[1-9]\d{0,3}[\s\-]\d{6,8}(?!\d)/g, " ")
     .replace(/(?<!\d)0[1-9]\d{8}(?!\d)/g, " ");
 }
+
+/** Sjabloonvariabelen die uit de orders van de klant komen. */
+export const ORDER_TEMPLATE_VARS = ["ordernummer", "vervoerder", "trackinglink"] as const;
+
+export function usesOrderVars(body: string): boolean {
+  return ORDER_TEMPLATE_VARS.some((v) => body.includes(`{{${v}}}`));
+}
+
+/**
+ * Welke order hoort in een sjabloon: de eerste aan het ticket gekoppelde
+ * order, anders de nieuwste. Ordernummers worden vergeleken zonder "#".
+ */
+export function orderTemplateVars(
+  orders: readonly {
+    number: string;
+    shipments: readonly { carrier: string; trackingUrl: string | null }[];
+  }[],
+  linked: readonly string[],
+): Record<(typeof ORDER_TEMPLATE_VARS)[number], string> {
+  const bare = (n: string) => n.replace(/^#/, "");
+  const wanted = new Set(linked.map(bare));
+  const order = orders.find((o) => wanted.has(bare(o.number))) ?? orders[0];
+  const shipment = order?.shipments[0];
+  return {
+    ordernummer: order ? bare(order.number) : "",
+    vervoerder: shipment?.carrier ?? "",
+    trackinglink: shipment?.trackingUrl ?? "",
+  };
+}

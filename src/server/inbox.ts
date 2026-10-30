@@ -20,7 +20,7 @@ import { parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
 import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
 import { cache } from "react";
-import { customerContext, magentoFor } from "@/integrations/magento";
+import { commerceFor, orderContext } from "@/integrations/commerce";
 import { asTenant } from "./session";
 
 import type { TicketStatus } from "@/domain/tickets";
@@ -213,22 +213,6 @@ export async function getTicketDetail(ticketId: string) {
       attachmentsForTicket(t, ticketId),
     ]);
 
-    const linked = new Set(orderRows.map((o) => o.orderNumber));
-    const magento = await customerContext(
-      t.organizationId,
-      await magentoFor(t),
-      ticket.shop.code,
-      ticket.contact.email,
-      [...linked],
-    );
-    const fetched =
-      "context" in magento ? magento.context : { customer: null, orders: [] };
-    const orders = [...fetched.orders].sort((a, b) => {
-      const la = linked.has(a.number) ? 0 : 1;
-      const lb = linked.has(b.number) ? 0 : 1;
-      return la - lb || b.createdAt.getTime() - a.createdAt.getTime();
-    });
-
     return {
       ...ticket,
       session,
@@ -236,11 +220,8 @@ export async function getTicketDetail(ticketId: string) {
       draft: draftRows[0] ?? null,
       tags: tagRows,
       allTags,
-      linkedOrders: [...linked],
-      customer: fetched.customer,
-      orders,
-      magentoState: magento.state,
-      magentoError: magento.state === "error" ? magento.message : null,
+      linkedOrders: orderRows.map((o) => o.orderNumber),
+
       agents,
       templates: templateRows,
       otherTickets,
@@ -314,3 +295,53 @@ export const getVisibleShopCodes = cache(async (): Promise<string[]> => {
     return rows.map((r) => r.code);
   });
 });
+
+/**
+ * Orders van de klant uit de webshop (Magento of Shopify), los van het
+ * ticket zelf: het ticketscherm toont eerst het ticket en laat deze
+ * gegevens erna binnenkomen.
+ */
+export async function getTicketCommerce(ticketId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(ticketId)) return null;
+  return asTenant(async (t) => {
+    const [row] = await t.tx
+      .select({ shopCode: s.shops.code, email: s.contacts.email })
+      .from(s.tickets)
+      .innerJoin(s.shops, eq(s.shops.id, s.tickets.shopId))
+      .innerJoin(s.contacts, eq(s.contacts.id, s.tickets.contactId))
+      .where(eq(s.tickets.id, ticketId));
+    if (!row) return null;
+    const linked = (
+      await t.tx
+        .select({ n: s.ticketOrders.orderNumber })
+        .from(s.ticketOrders)
+        .where(eq(s.ticketOrders.ticketId, ticketId))
+    ).map((r) => r.n);
+    const result = await orderContext(
+      t.organizationId,
+      await commerceFor(t, row.shopCode),
+      row.shopCode,
+      row.email,
+      linked,
+    );
+    const context = "context" in result ? result.context : { customer: null, orders: [] };
+    // Gekoppelde orders bovenaan (Shopify noemt ze "#1001", de mail vaak "1001").
+    const bare = (n: string) => n.replace(/^#/, "");
+    const linkedSet = new Set(linked.map(bare));
+    const orders = [...context.orders].sort((a, b) => {
+      const la = linkedSet.has(bare(a.number)) ? 0 : 1;
+      const lb = linkedSet.has(bare(b.number)) ? 0 : 1;
+      return la - lb || b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    return {
+      state: result.state,
+      platform: "platform" in result ? result.platform : null,
+      error: result.state === "error" ? result.message : null,
+      customer: context.customer,
+      orders,
+      linked: [...linkedSet],
+    };
+  });
+}
+
+export type TicketCommerce = NonNullable<Awaited<ReturnType<typeof getTicketCommerce>>>;

@@ -237,6 +237,10 @@ describe("Magento-koppeling (tegen een nagebootste Magento)", () => {
     });
     // Alleen lezen.
     expect(m.calls.every((c) => c.method === "GET")).toBe(true);
+    // Alleen de velden die Yuzu gebruikt (sneller), en de handtekening klopt daarmee.
+    const listCalls = m.calls.filter((c) => /\/(orders|shipments)$/.test(c.path));
+    expect(listCalls.length).toBe(3);
+    expect(listCalls.every((c) => c.fields?.startsWith("items["))).toBe(true);
   });
 
   it("zonder gekoppelde store view: orders uit alle shops", async () => {

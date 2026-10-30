@@ -3,7 +3,7 @@
  * in de lijst en maak een detailscherm (src/components/admin/integrations/).
  */
 
-export type IntegrationKind = "magento" | "mailgun" | "ai";
+export type IntegrationKind = "magento" | "shopify" | "mailgun" | "ai";
 export type IntegrationStatus = "not_configured" | "connected" | "error" | "demo";
 
 export type IntegrationInfo = {
@@ -19,6 +19,13 @@ export const INTEGRATIONS: IntegrationInfo[] = [
   {
     kind: "magento",
     name: "Magento 2",
+    category: "Webshop",
+    description: "Orders, betalingen en track & trace bij elk ticket. Alleen lezen.",
+    available: true,
+  },
+  {
+    kind: "shopify",
+    name: "Shopify",
     category: "Webshop",
     description: "Orders, betalingen en track & trace bij elk ticket. Alleen lezen.",
     available: true,

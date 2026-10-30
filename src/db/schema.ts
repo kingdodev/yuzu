@@ -612,6 +612,7 @@ export const integrationKindEnum = pgEnum("integration_kind", [
   "mailgun",
   "magento",
   "ai",
+  "shopify",
 ]);
 export const integrationStatusEnum = pgEnum("integration_status", [
   "not_configured",
