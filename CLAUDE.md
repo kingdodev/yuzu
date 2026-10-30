@@ -66,7 +66,8 @@ veranderen.
 - `src/app/(app)/beheer` — beheerpagina's (alleen eigenaar en beheerder)
 - `src/server/` — data ophalen (`inbox.ts`, `admin.ts`, `reports.ts`),
   sessie en rechten (`session.ts`), server actions (`actions/`)
-- `src/components/` — interface; ontwerptokens in `src/app/globals.css`.
+- `src/components/` — interface; ontwerptokens in `src/app/globals.css`
+  (kleurstelling naar het voorbeeld van de Shopify-beheeromgeving).
   Yuzu-geel is alleen voor wat de AI klaarzet.
 
 Next.js 16 met Cache Components: alles wat data of de URL leest, staat binnen

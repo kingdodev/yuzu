@@ -26,10 +26,10 @@ export function NavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[14px] transition-colors ${
+      className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-[6px] text-[14px] transition-colors ${
         active
-          ? "bg-pine-tint font-semibold text-ink"
-          : "text-ink-soft hover:bg-panel-sunk hover:text-ink"
+          ? "bg-selected font-semibold text-ink shadow-card"
+          : "text-ink-soft hover:bg-hover hover:text-ink"
       }`}
     >
       <span className="flex min-w-0 flex-1 items-center gap-2.5 truncate">
@@ -38,7 +38,7 @@ export function NavLink({
       {count !== undefined && count > 0 && (
         <span
           className={`tabular min-w-[22px] rounded-full px-1.5 text-center text-xs font-semibold ${
-            emphasize ? "bg-yuzu text-on-yuzu" : "text-muted"
+            emphasize ? "bg-line-strong text-ink" : "text-muted"
           }`}
         >
           {count}

@@ -39,7 +39,7 @@ export function MemberRow({
             type="checkbox"
             name="active"
             defaultChecked={member.active}
-            className="h-4 w-4 accent-[var(--pine)]"
+            className="h-4 w-4 accent-[var(--primary)]"
           />
           Actief
         </label>
@@ -61,7 +61,7 @@ export function MemberRow({
             name="allShops"
             checked={allShops}
             onChange={(e) => setAllShops(e.target.checked)}
-            className="h-4 w-4 accent-[var(--pine)]"
+            className="h-4 w-4 accent-[var(--primary)]"
           />
           Toegang tot alle shops
         </label>
@@ -74,7 +74,7 @@ export function MemberRow({
                   name="shops"
                   value={shop.id}
                   defaultChecked={member.shops.includes(shop.code)}
-                  className="h-4 w-4 accent-[var(--pine)]"
+                  className="h-4 w-4 accent-[var(--primary)]"
                 />
                 {shop.name}
               </label>

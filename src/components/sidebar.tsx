@@ -4,7 +4,7 @@ import { VIEW_LABELS, type InboxView } from "@/domain/views";
 import { getViewCounts } from "@/server/inbox";
 import { canManage, getSession } from "@/server/session";
 import { NavLink } from "./nav-link";
-import { ShopBadge, Skeleton, YuzuMark } from "./ui";
+import { ShopBadge, Skeleton } from "./ui";
 
 const ICON = { className: "h-[17px] w-[17px] shrink-0 text-muted", strokeWidth: 1.8 };
 
@@ -12,12 +12,8 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Hoofdmenu"
-      className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4"
+      className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-3"
     >
-      <div className="flex items-center gap-2.5 px-2">
-        <YuzuMark size={24} />
-        <span className="text-[17px] font-semibold tracking-[-0.01em]">Yuzu</span>
-      </div>
       <Suspense fallback={<Skeleton lines={9} />}>
         <SidebarWithData />
       </Suspense>
@@ -27,15 +23,7 @@ export function Sidebar() {
 
 async function SidebarWithData() {
   const [counts, session] = await Promise.all([getViewCounts(), getSession()]);
-  return (
-    <>
-      <SidebarLinks counts={counts} admin={canManage(session.role)} />
-      <div className="mt-auto rounded-lg px-2.5 py-2 text-[13px] leading-snug text-muted">
-        <div className="font-medium text-ink-soft">{session.name}</div>
-        <div>{session.organizationName}, demo-omgeving</div>
-      </div>
-    </>
-  );
+  return <SidebarLinks counts={counts} admin={canManage(session.role)} />;
 }
 
 function SidebarLinks({

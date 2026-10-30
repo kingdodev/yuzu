@@ -51,7 +51,7 @@ export function Thread({ detail }: { detail: TicketDetail }) {
         return (
           <li
             key={m.id}
-            className={`rounded-xl border px-4 py-3 ${inbound ? "border-line bg-panel" : "border-pine/20 bg-pine-tint/50 md:ml-10"}`}
+            className={`rounded-xl border px-4 py-3 ${inbound ? "border-line bg-panel" : "border-info-line bg-info-tint md:ml-10"}`}
           >
             <div className="mb-2 flex flex-wrap items-center gap-x-2 text-[13.5px]">
               <span className="font-semibold">

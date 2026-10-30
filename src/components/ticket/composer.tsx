@@ -178,7 +178,7 @@ export function Composer(props: Props) {
               onClick={() => setMode(value)}
               className={`-mb-px rounded-t-md border-b-2 px-3 py-2 text-[14px] ${
                 mode === value
-                  ? "border-pine font-semibold text-ink"
+                  ? "border-ink font-semibold text-ink"
                   : "border-transparent text-muted hover:text-ink"
               }`}
             >
@@ -261,7 +261,7 @@ export function Composer(props: Props) {
           {feedback && (
             <p
               role="status"
-              className={`mt-2 text-[13.5px] ${feedback.ok ? "text-pine" : "text-alert"}`}
+              className={`mt-2 text-[13.5px] ${feedback.ok ? "text-success" : "text-alert"}`}
             >
               {feedback.text}
             </p>

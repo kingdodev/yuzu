@@ -165,7 +165,7 @@ export function TagPicker({
               >
                 <TagChip name={t.name} color={t.color} />
                 {active.has(t.id) && (
-                  <Check className="h-4 w-4 text-pine" aria-label="Actief" />
+                  <Check className="h-4 w-4 text-ink" aria-label="Actief" />
                 )}
               </button>
             </li>

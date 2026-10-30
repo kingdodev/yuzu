@@ -65,7 +65,7 @@ async function ShopTable() {
                 )}
                 <Link
                   href={`/beheer/shops/${shop.id}`}
-                  className="text-pine underline-offset-2 hover:underline"
+                  className="text-link underline-offset-2 hover:underline"
                 >
                   Bewerken
                 </Link>

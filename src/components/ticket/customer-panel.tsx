@@ -46,7 +46,7 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
             {orders.map((o) => (
               <li
                 key={o.number}
-                className={`rounded-lg border p-3 ${linked.has(o.number) ? "border-pine/40 bg-pine-tint/40" : "border-line"}`}
+                className={`rounded-lg border p-3 ${linked.has(o.number) ? "border-line-strong bg-panel-sunk" : "border-line"}`}
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="tabular font-semibold">{o.number}</span>
@@ -62,7 +62,7 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
                     {ORDER_STATUS_LABELS[o.status]}
                   </span>
                   {linked.has(o.number) && (
-                    <span className="text-pine">gekoppeld aan dit ticket</span>
+                    <span className="text-success">gekoppeld aan dit ticket</span>
                   )}
                 </div>
 
@@ -87,7 +87,7 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
                     href={sh.trackingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 flex items-start gap-2 rounded-md bg-panel-sunk px-2 py-1.5 text-[13.5px] hover:text-pine"
+                    className="mt-2 flex items-start gap-2 rounded-md bg-panel-sunk px-2 py-1.5 text-[13.5px] hover:text-link"
                   >
                     <Truck
                       className="mt-[2px] h-3.5 w-3.5 shrink-0 text-muted"
@@ -129,7 +129,7 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
                   href={o.adminUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-[13px] text-pine underline-offset-2 hover:underline"
+                  className="mt-2 inline-flex items-center gap-1 text-[13px] text-link underline-offset-2 hover:underline"
                 >
                   Open in Magento
                   <ExternalLink className="h-3 w-3" aria-hidden />

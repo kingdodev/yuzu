@@ -24,11 +24,11 @@ export function TeamMemberToggle({
       onClick={() => start(() => toggleTeamMember(teamId, userId))}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13.5px] ${
         member
-          ? "border-pine/40 bg-pine-tint font-medium text-ink"
+          ? "border-ink/40 bg-selected font-medium text-ink shadow-card"
           : "border-line text-muted hover:text-ink"
       }`}
     >
-      {member && <Check className="h-3.5 w-3.5 text-pine" aria-hidden />}
+      {member && <Check className="h-3.5 w-3.5 text-ink" aria-hidden />}
       {name}
     </button>
   );

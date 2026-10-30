@@ -128,7 +128,7 @@ async function Settings() {
             </div>
             <Link
               href={`/beheer/shops/${s.id}`}
-              className="text-[14px] text-pine underline-offset-2 hover:underline"
+              className="text-[14px] text-link underline-offset-2 hover:underline"
             >
               Aanpassen
             </Link>

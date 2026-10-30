@@ -50,7 +50,7 @@ function linkify(text: string) {
         href={part}
         target="_blank"
         rel="noopener noreferrer nofollow"
-        className="break-all text-pine underline underline-offset-2"
+        className="break-all text-link underline underline-offset-2"
       >
         {part}
       </a>

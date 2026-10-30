@@ -83,7 +83,7 @@ export function ShopForm({ shop }: { shop: Shop | null }) {
             type="checkbox"
             name="active"
             defaultChecked={shop?.active ?? true}
-            className="h-4 w-4 accent-[var(--pine)]"
+            className="h-4 w-4 accent-[var(--primary)]"
           />
           Shop is actief. Uitgeschakelde shops ontvangen geen nieuwe tickets.
         </label>

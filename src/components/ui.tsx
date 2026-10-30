@@ -32,7 +32,7 @@ export function ShopBadge({ code, size = "sm" }: { code: string; size?: "sm" | "
 
 const STATUS_DOT: Record<TicketStatus, string> = {
   new: "var(--yuzu)",
-  open: "var(--pine)",
+  open: "var(--link)",
   pending_customer: "var(--line-strong)",
   pending_third_party: "var(--line-strong)",
   solved: "transparent",
@@ -152,7 +152,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-line bg-panel ${className}`}>
+    <section className={`rounded-xl bg-panel shadow-card ${className}`}>
       {children}
     </section>
   );

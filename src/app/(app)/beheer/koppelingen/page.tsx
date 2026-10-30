@@ -8,7 +8,7 @@ export const metadata = { title: "Koppelingen" };
 
 const STATUS: Record<string, { label: string; dot: string }> = {
   demo: { label: "Demo, nagebootst", dot: "var(--yuzu)" },
-  connected: { label: "Verbonden", dot: "var(--pine)" },
+  connected: { label: "Verbonden", dot: "var(--success)" },
   error: { label: "Fout", dot: "var(--alert)" },
   not_configured: { label: "Niet ingesteld", dot: "var(--line-strong)" },
 };

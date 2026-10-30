@@ -30,7 +30,7 @@ export function ActionForm({
         {state && (
           <p
             role="status"
-            className={`text-[13.5px] ${state.ok ? "text-pine" : "text-alert"}`}
+            className={`text-[13.5px] ${state.ok ? "text-success" : "text-alert"}`}
           >
             {state.ok ? state.message : state.error}
           </p>

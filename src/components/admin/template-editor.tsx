@@ -47,7 +47,7 @@ export function TemplateEditor({
         <button
           type="button"
           onClick={() => setSelected("new")}
-          className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium ${selected === "new" ? "bg-pine-tint" : "text-pine hover:bg-panel-sunk"}`}
+          className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-[14px] font-medium ${selected === "new" ? "bg-hover" : "text-link hover:bg-panel-sunk"}`}
         >
           Nieuw sjabloon
         </button>
@@ -65,7 +65,7 @@ export function TemplateEditor({
                   type="button"
                   aria-current={selected === t.id}
                   onClick={() => setSelected(t.id)}
-                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[14px] ${selected === t.id ? "bg-pine-tint font-semibold" : "hover:bg-panel-sunk"}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[14px] ${selected === t.id ? "bg-hover font-semibold" : "hover:bg-panel-sunk"}`}
                 >
                   <span className="min-w-0 flex-1 truncate">{t.name}</span>
                   {t.shopCode && <ShopBadge code={t.shopCode} />}

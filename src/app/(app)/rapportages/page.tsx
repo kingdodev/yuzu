@@ -67,7 +67,7 @@ function Bars({
         >
           <span className="truncate text-[14px]">{i.label}</span>
           <span
-            className="h-2.5 rounded-r-[4px] bg-pine"
+            className="h-2.5 rounded-r-[4px] bg-chart"
             style={{ width: `${(i.value / max) * 100}%`, minWidth: i.value > 0 ? 4 : 0 }}
           />
           <span className="tabular text-right text-[14px] text-ink-soft">{i.value}</span>
@@ -150,7 +150,7 @@ async function Report() {
                   {d.n}
                 </span>
                 <span
-                  className="w-full max-w-[28px] rounded-t-[4px] bg-pine"
+                  className="w-full max-w-[28px] rounded-t-[4px] bg-chart"
                   style={{
                     height: `${(d.n / maxDay) * 100}%`,
                     minHeight: d.n > 0 ? 4 : 1,

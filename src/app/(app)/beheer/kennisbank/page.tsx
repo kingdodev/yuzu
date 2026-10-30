@@ -16,7 +16,7 @@ import { listKnowledge } from "@/server/admin";
 export const metadata = { title: "Kennisbank" };
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  indexed: { label: "Ingelezen", className: "text-pine" },
+  indexed: { label: "Ingelezen", className: "text-success" },
   pending: { label: "Wacht op crawl", className: "text-ink-soft" },
   excluded: { label: "Uitgesloten", className: "text-muted" },
   failed: { label: "Mislukt", className: "text-alert" },
@@ -68,7 +68,7 @@ async function Knowledge({
             href={`/beheer/kennisbank?shop=${s.code}`}
             className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[14px] ${
               s.id === shop.id
-                ? "border-pine/40 bg-pine-tint font-semibold"
+                ? "border-line-strong bg-panel font-semibold shadow-card"
                 : "border-line bg-panel text-ink-soft hover:text-ink"
             }`}
           >
@@ -112,7 +112,7 @@ async function Knowledge({
                     href={p.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 break-all text-[13px] text-muted hover:text-pine"
+                    className="inline-flex items-center gap-1 break-all text-[13px] text-muted hover:text-link"
                   >
                     {p.url.replace(/^https?:\/\//, "")}
                     <ExternalLink className="h-3 w-3" aria-hidden />

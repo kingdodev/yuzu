@@ -60,7 +60,7 @@ async function ContactResult({
   const params = await searchParams;
   if (params.verwijderd) {
     return (
-      <p role="status" className="mt-4 text-[14px] text-pine">
+      <p role="status" className="mt-4 text-[14px] text-success">
         De gegevens van deze klant zijn verwijderd. Dit staat in het auditlog.
       </p>
     );

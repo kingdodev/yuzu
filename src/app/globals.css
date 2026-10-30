@@ -3,71 +3,100 @@
 /*
  * Yuzu — ontwerptokens
  *
- * Rustige, koele basis (mineraal en dennengroen) zodat je er een hele dag in
- * kunt werken. Yuzu-geel is gereserveerd voor wat de AI voor je klaarzet;
- * daardoor springt een concept er direct uit.
+ * Kleurstelling naar het voorbeeld van de Shopify-beheeromgeving: een donkere
+ * balk bovenin, een lichtgrijze zijbalk, witte kaarten op een grijze
+ * achtergrond, donkere hoofdknoppen en blauwe links. Groen betekent alleen
+ * "gelukt". Yuzu-geel is gereserveerd voor wat de AI voor je klaarzet.
  */
 
 :root {
-  --bg: #eef1ef;
+  --bg: #f1f1f1;
   --panel: #ffffff;
-  --panel-sunk: #f6f8f7;
-  --ink: #1d2b26;
-  --ink-soft: #3c4a44;
-  --muted: #66736d;
-  --line: #dce2de;
-  --line-strong: #c6cfca;
-  --pine: #234a3d;
-  --pine-hover: #1a3a30;
-  --pine-tint: #e3ece8;
+  --panel-sunk: #f7f7f7;
+  --nav: #ebebeb;
+  --topbar: #1a1a1a;
+  --topbar-ink: #e3e3e3;
+  --ink: #303030;
+  --ink-soft: #4a4a4a;
+  --muted: #616161;
+  --line: #e3e3e3;
+  --line-strong: #cccccc;
+  --input: #8a8a8a;
+  --primary: #303030;
+  --primary-hover: #1a1a1a;
+  --on-primary: #ffffff;
+  --selected: #fafafa;
+  --hover: #f1f1f1;
+  --link: #005bd3;
+  --focus: #005bd3;
+  --success: #0c5132;
+  --success-tint: #cdfee1;
+  --info-tint: #eaf4ff;
+  --info-line: #c5dbf7;
+  --chart: #005bd3;
+  --card-shadow: 0 1px 0 0 rgba(26, 26, 26, 0.07), 0 0 0 1px rgba(26, 26, 26, 0.06);
   --yuzu: #e6d63b;
   --yuzu-soft: #fbf7d3;
   --yuzu-ink: #4a4410;
   /* Tekst óp yuzu-geel; in beide modi donker. */
   --on-yuzu: #3a350a;
-  --alert: #b3261e;
-  --alert-tint: #fbe9e7;
-  --note: #fff4e0;
-  --note-line: #efd9a8;
+  --alert: #8e1f0b;
+  --alert-tint: #fee9e8;
+  --note: #fff1e3;
+  --note-line: #ffd6a4;
 
-  --shop-nl: #c4560c;
-  --shop-nl-tint: #fdebdc;
-  --shop-be: #2f3532;
-  --shop-be-tint: #e4e8e6;
-  --shop-fr: #23457a;
-  --shop-fr-tint: #dfe8f6;
-  --shop-es: #a3222b;
-  --shop-es-tint: #f9e1e2;
+  --shop-nl: #b25500;
+  --shop-nl-tint: #ffefdd;
+  --shop-be: #303030;
+  --shop-be-tint: #e3e3e3;
+  --shop-fr: #00527c;
+  --shop-fr-tint: #e0f0ff;
+  --shop-es: #8e1f0b;
+  --shop-es-tint: #fee9e8;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141917;
-    --panel: #1b2220;
-    --panel-sunk: #171d1b;
-    --ink: #e7ece9;
-    --ink-soft: #c5cec9;
-    --muted: #93a09a;
-    --line: #2b3431;
-    --line-strong: #3a4541;
-    --pine: #8cc5ad;
-    --pine-hover: #a6d6c1;
-    --pine-tint: #22322c;
+    --bg: #1a1a1a;
+    --panel: #262626;
+    --panel-sunk: #202020;
+    --nav: #202020;
+    --topbar: #0f0f0f;
+    --topbar-ink: #e3e3e3;
+    --ink: #ececec;
+    --ink-soft: #cfcfcf;
+    --muted: #a3a3a3;
+    --line: #383838;
+    --line-strong: #4a4a4a;
+    --input: #6b6b6b;
+    --primary: #f1f1f1;
+    --primary-hover: #ffffff;
+    --on-primary: #1a1a1a;
+    --selected: #303030;
+    --hover: #2c2c2c;
+    --link: #7fb5ff;
+    --focus: #7fb5ff;
+    --success: #7ee2a8;
+    --success-tint: #12331f;
+    --info-tint: #1c2a3d;
+    --info-line: #2c4466;
+    --chart: #7fb5ff;
+    --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
     --yuzu: #e6d63b;
     --yuzu-soft: #2c2a12;
     --yuzu-ink: #f1e88c;
-    --alert: #f2a59d;
+    --alert: #ffa294;
     --alert-tint: #3a1f1c;
     --note: #2d2616;
     --note-line: #4d4126;
 
-    --shop-nl: #f2a36b;
+    --shop-nl: #ffb36b;
     --shop-nl-tint: #3a2618;
-    --shop-be: #d3d9d6;
-    --shop-be-tint: #2a302d;
-    --shop-fr: #a3bff0;
-    --shop-fr-tint: #1d2a40;
-    --shop-es: #f1a3a8;
+    --shop-be: #e3e3e3;
+    --shop-be-tint: #383838;
+    --shop-fr: #8cc8ff;
+    --shop-fr-tint: #1c2a3d;
+    --shop-es: #ffa294;
     --shop-es-tint: #3c1e21;
   }
 }
@@ -76,14 +105,24 @@
   --color-bg: var(--bg);
   --color-panel: var(--panel);
   --color-panel-sunk: var(--panel-sunk);
+  --color-nav: var(--nav);
+  --color-topbar: var(--topbar);
+  --color-topbar-ink: var(--topbar-ink);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-pine: var(--pine);
-  --color-pine-hover: var(--pine-hover);
-  --color-pine-tint: var(--pine-tint);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-selected: var(--selected);
+  --color-hover: var(--hover);
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-info-tint: var(--info-tint);
+  --color-info-line: var(--info-line);
+  --color-chart: var(--chart);
   --color-yuzu: var(--yuzu);
   --color-yuzu-soft: var(--yuzu-soft);
   --color-yuzu-ink: var(--yuzu-ink);
@@ -92,6 +131,7 @@
   --color-alert-tint: var(--alert-tint);
   --color-note: var(--note);
   --color-note-line: var(--note-line);
+  --shadow-card: var(--card-shadow);
   --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -112,7 +152,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--pine);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -123,16 +163,20 @@ body {
   .field {
     width: 100%;
     background: var(--panel);
-    border: 1px solid var(--line-strong);
+    border: 1px solid var(--input);
     border-radius: 8px;
-    padding: 0.45rem 0.65rem;
+    padding: 0.42rem 0.65rem;
     color: var(--ink);
     font: inherit;
   }
+  .field:hover {
+    background: var(--panel-sunk);
+  }
   .field:focus {
     outline: none;
-    border-color: var(--pine);
-    box-shadow: 0 0 0 3px var(--pine-tint);
+    background: var(--panel);
+    border-color: var(--focus);
+    box-shadow: 0 0 0 1px var(--focus);
   }
   textarea.field {
     line-height: 1.55;
@@ -144,39 +188,68 @@ body {
     align-items: center;
     gap: 0.4rem;
     border-radius: 8px;
-    padding: 0.45rem 0.85rem;
-    font-weight: 560;
+    padding: 0.4rem 0.8rem;
+    font-weight: 600;
+    font-size: 0.93rem;
     line-height: 1.2;
-    border: 1px solid transparent;
+    border: 0;
     cursor: pointer;
     white-space: nowrap;
   }
   .btn:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
+  /* Donkere hoofdknop met de lichte rand en schaduw die Shopify gebruikt. */
   .btn-primary {
-    background: var(--pine);
-    color: var(--panel);
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow:
+      0 -1px 0 0 #b5b5b5 inset,
+      0 0 0 1px rgba(0, 0, 0, 0.1) inset,
+      0 0.5px 0 1.5px #ffffff inset;
+    background-image: linear-gradient(
+      180deg,
+      rgba(48, 48, 48, 0) 63.53%,
+      rgba(255, 255, 255, 0.15) 100%
+    );
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--pine-hover);
+    background-color: var(--primary-hover);
+  }
+  .btn-primary:active:not(:disabled) {
+    box-shadow: 0 2px 0 0 #000 inset;
   }
   .btn-secondary {
     background: var(--panel);
-    border-color: var(--line-strong);
     color: var(--ink);
+    box-shadow:
+      0 -1px 0 0 #b5b5b5 inset,
+      0 0 0 1px rgba(0, 0, 0, 0.1) inset,
+      0 0.5px 0 1.5px #ffffff inset;
   }
   .btn-secondary:hover:not(:disabled) {
-    border-color: var(--ink-soft);
+    background: var(--panel-sunk);
+  }
+  .btn-secondary:active:not(:disabled) {
+    background: var(--hover);
+    box-shadow: 0 2px 1px 0 rgba(26, 26, 26, 0.2) inset;
   }
   .btn-quiet {
     background: transparent;
-    color: var(--muted);
+    color: var(--ink-soft);
   }
   .btn-quiet:hover:not(:disabled) {
     color: var(--ink);
-    background: var(--panel-sunk);
+    background: var(--hover);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-primary,
+  .btn-secondary {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    background-image: none;
   }
 }
 
