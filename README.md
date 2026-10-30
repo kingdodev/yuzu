@@ -44,13 +44,24 @@ voorbeelddata te beginnen.
 
 ## Online demo (Vercel)
 
-Importeer de repository in Vercel en zet één omgevingsvariabele:
+Importeer de repository in Vercel en zet twee omgevingsvariabelen:
 
 - `DEMO_PASSWORD`: het wachtwoord dat de browser vraagt (gebruikersnaam maakt
   niet uit).
+- `DATABASE_URL`: de verbinding met Supabase (regio Frankfurt). Neem in
+  Supabase onder **Connect** de **Transaction pooler** (poort 6543) en vul je
+  databasewachtwoord in.
 
-Zet géén `DATABASE_URL`; dan draait de demo met voorbeelddata. Die begint af
-en toe opnieuw, omdat er nog geen vaste database achter zit.
+Bij elke deploy past Vercel eerst de databasemigraties toe (`vercel-build` in
+package.json). Staat `DEMO_PASSWORD` aan, dan laadt het ook de voorbeelddata,
+maar alleen de eerste keer. Wat je daarna doet, blijft bewaard.
+
+Zolang inloggen niet gebouwd is, ben je in de online demo altijd Frank. Dat
+kan alleen achter het demowachtwoord: zonder `DEMO_PASSWORD` geeft Yuzu met
+een echte database geen toegang.
+
+Zonder `DATABASE_URL` draait de demo op een tijdelijke database per
+serverinstantie. Dat geeft af en toe een 404 en begint geregeld opnieuw.
 
 ## Voor ontwikkelaars
 

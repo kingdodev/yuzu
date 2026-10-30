@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { postgresOptions } from "./connection";
 import * as schema from "./schema";
 import type { Db } from "./types";
 
@@ -32,11 +33,7 @@ export function isDemoMode(): boolean {
 }
 
 async function connectPostgres(url: string): Promise<Db> {
-  const client = postgres(url, {
-    max: 5,
-    // Supabase' transaction pooler ondersteunt geen prepared statements.
-    prepare: false,
-  });
+  const client = postgres(url, postgresOptions(url, 5));
   return drizzle(client, { schema }) as unknown as Db;
 }
 

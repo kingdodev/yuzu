@@ -3,7 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
-import { getDb, isDemoMode } from "@/db/client";
+import { getDb } from "@/db/client";
+import { usesDemoSession } from "@/db/connection";
 import { memberships, organizations, users } from "@/db/schema";
 import { DEMO_ORG_SLUG, DEMO_USER_ID } from "@/db/seed/demo";
 import { withPrivileged, withTenant, type TenantTx } from "@/db/tenant";
@@ -22,14 +23,15 @@ export type Session = {
 /**
  * De ingelogde gebruiker en zijn organisatie.
  *
- * In de demo-omgeving is dat altijd Frank (eigenaar). Zodra inloggen met
+ * Zolang inloggen niet gebouwd is, is dat altijd Frank (eigenaar): zonder
+ * database, of met database achter het demowachtwoord. Zodra inloggen met
  * Google via Supabase Auth gebouwd is, komt de gebruiker uit de sessie.
  */
 export const getSession = cache(async (): Promise<Session> => {
   await connection();
-  if (!isDemoMode()) {
+  if (!usesDemoSession()) {
     throw new Error(
-      "Inloggen is nog niet gebouwd; draai Yuzu zonder DATABASE_URL voor de demo.",
+      "Inloggen is nog niet gebouwd. Zet DEMO_PASSWORD, of draai Yuzu zonder DATABASE_URL.",
     );
   }
   const db = await getDb();

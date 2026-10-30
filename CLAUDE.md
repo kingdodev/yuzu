@@ -60,6 +60,12 @@ Magento komt dan uit `src/integrations/magento/demo.ts`. De echte koppelingen
 implementeren dezelfde interfaces; de schermen hoeven daarvoor niet te
 veranderen.
 
+De online demo draait op Supabase mét `DEMO_PASSWORD`: dan is de gebruiker ook
+Frank (zie `usesDemoSession` in `src/db/connection.ts`), en laadt
+`scripts/migrate.mts` bij elke deploy de migraties en eenmalig de voorbeelddata.
+Zonder `DEMO_PASSWORD` geeft Yuzu met een database geen toegang, tot inloggen
+gebouwd is.
+
 ## Structuur
 
 - `src/app/(app)/inbox` — inbox en ticketscherm
