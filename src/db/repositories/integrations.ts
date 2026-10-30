@@ -1,9 +1,9 @@
 import { and, asc, eq, sql } from "drizzle-orm";
+import type { IntegrationKind, IntegrationStatus } from "@/domain/integrations";
 import { integrations, shops } from "../schema";
 import type { TenantTx } from "../tenant";
 
-export type IntegrationKind = "mailgun" | "magento" | "ai";
-export type IntegrationStatus = "not_configured" | "connected" | "error" | "demo";
+export type { IntegrationKind, IntegrationStatus };
 
 export async function getIntegration(t: TenantTx, kind: IntegrationKind) {
   const [row] = await t.tx.select().from(integrations).where(eq(integrations.kind, kind));

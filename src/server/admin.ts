@@ -164,7 +164,16 @@ export function listAiSettings() {
 export function listIntegrations() {
   return asOwner(async ({ tx }) => {
     const [rows, shops] = await Promise.all([
-      tx.select().from(s.integrations),
+      // Bewust zonder de kolom `secrets`.
+      tx
+        .select({
+          kind: s.integrations.kind,
+          status: s.integrations.status,
+          settings: s.integrations.settings,
+          lastCheckedAt: s.integrations.lastCheckedAt,
+          lastError: s.integrations.lastError,
+        })
+        .from(s.integrations),
       tx
         .select({
           code: s.shops.code,
@@ -176,7 +185,19 @@ export function listIntegrations() {
         .from(s.shops)
         .orderBy(sql`${s.shops.magentoStoreId} asc nulls last`, asc(s.shops.name)),
     ]);
-    return { integrations: Object.fromEntries(rows.map((r) => [r.kind, r])), shops };
+    return {
+      integrations: Object.fromEntries(
+        rows.map((r) => [
+          r.kind,
+          {
+            ...r,
+            // Alleen wat het overzicht nodig heeft; geen lijsten of interne instellingen.
+            summary: r.settings.baseUrl ?? null,
+          },
+        ]),
+      ),
+      shops,
+    };
   });
 }
 

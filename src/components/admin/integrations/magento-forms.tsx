@@ -8,8 +8,8 @@ import {
   retestMagento,
 } from "@/server/actions/integrations";
 import type { FormState } from "@/server/actions/admin";
-import { ActionForm, Field } from "../forms";
-import { ShopBadge } from "../ui";
+import { ActionForm, Field } from "../../forms";
+import { ShopBadge } from "../../ui";
 
 const SECRET_FIELDS = [
   ["consumerKey", "Consumer Key"],
