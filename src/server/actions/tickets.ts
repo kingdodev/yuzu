@@ -4,15 +4,23 @@ import { and, eq, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import {
+  addTagToTickets,
   archiveTickets as archiveTicketRows,
+  assignTickets,
   changeTicketStatus,
+  changeTicketStatuses,
   type Actor,
 } from "@/db/repositories/tickets";
 import { insertOutboundMessage, startOutboundTicket } from "@/db/repositories/outbound";
 import * as s from "@/db/schema";
 import { MAX_ATTACHMENTS_PER_MESSAGE } from "@/domain/attachments";
 import { isPlausibleEmail } from "@/domain/contacts";
-import { nextTicketAfter, TICKET_STATUSES, type TicketStatus } from "@/domain/tickets";
+import {
+  nextTicketAfter,
+  TICKET_STATUS_LABELS,
+  TICKET_STATUSES,
+  type TicketStatus,
+} from "@/domain/tickets";
 import { isInboxView, viewForStatus } from "@/domain/views";
 import { getFileStore } from "@/integrations/storage";
 import { listTickets } from "../inbox";
@@ -51,26 +59,11 @@ export async function assignTicket(
 ): Promise<ActionResult> {
   const id = uuid.parse(ticketId);
   const assignee = userId ? uuid.parse(userId) : null;
-  await asTenant(async ({ tx, organizationId }, session) => {
-    const [before] = await tx
-      .select({ a: s.tickets.assigneeId })
-      .from(s.tickets)
-      .where(eq(s.tickets.id, id));
-    if (!before || before.a === assignee) return;
-    await tx
-      .update(s.tickets)
-      .set({ assigneeId: assignee, updatedAt: sql`now()` })
-      .where(eq(s.tickets.id, id));
-    await tx.insert(s.ticketEvents).values({
-      organizationId,
-      ticketId: id,
-      type: "assigned",
-      fromValue: before.a,
-      toValue: assignee,
-      actorType: "user",
-      actorUserId: session.userId,
-    });
-  });
+  try {
+    await asTenant((t, session) => assignTickets(t, [id], assignee, me(session.userId)));
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Toewijzen mislukt" };
+  }
   refresh();
   return { ok: true };
 }
@@ -286,6 +279,79 @@ export async function archiveTickets(ticketIds: string[]): Promise<ActionResult>
     return { ok: true, message };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Archiveren mislukt" };
+  }
+}
+
+const bulkSchema = z.object({
+  ticketIds: z.array(uuid).min(1).max(500),
+  action: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("assign"), userId: uuid.nullable() }),
+    z.object({ type: z.literal("status"), status: statusSchema }),
+    z.object({ type: z.literal("tag"), tagId: uuid }),
+  ]),
+});
+
+const tickets = (n: number) => `${n} ${n === 1 ? "ticket" : "tickets"}`;
+
+/** Toewijzen, status wijzigen of een label geven aan meerdere tickets tegelijk. */
+export async function bulkUpdateTickets(
+  input: z.input<typeof bulkSchema>,
+): Promise<ActionResult> {
+  const parsed = bulkSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Ongeldige selectie" };
+  const { ticketIds, action } = parsed.data;
+  try {
+    const message = await asTenant(async (t, session) => {
+      const actor = me(session.userId);
+      switch (action.type) {
+        case "assign": {
+          const { changed, unchanged } = await assignTickets(
+            t,
+            ticketIds,
+            action.userId,
+            actor,
+          );
+          let who = "niemand";
+          if (action.userId) {
+            const [u] = await t.tx
+              .select({ name: s.users.name })
+              .from(s.users)
+              .where(eq(s.users.id, action.userId));
+            who = action.userId === session.userId ? "jou" : (u?.name ?? "collega");
+          }
+          return (
+            `${tickets(changed.length)} toegewezen aan ${who}` +
+            (unchanged.length ? `, ${unchanged.length} hadden die eigenaar al` : "")
+          );
+        }
+        case "status": {
+          const { changed, skipped } = await changeTicketStatuses(
+            t,
+            ticketIds,
+            action.status,
+            actor,
+          );
+          return (
+            `${tickets(changed.length)} op ${TICKET_STATUS_LABELS[action.status].toLowerCase()} gezet` +
+            (skipped.length
+              ? `, ${skipped.length} overgeslagen (kon niet of was al zo)`
+              : "")
+          );
+        }
+        case "tag": {
+          const { tag, added } = await addTagToTickets(t, ticketIds, action.tagId);
+          const already = ticketIds.length - added;
+          return (
+            `${tickets(added)} kregen het label ${tag.name}` +
+            (already > 0 ? `, ${already} hadden het al` : "")
+          );
+        }
+      }
+    });
+    refresh();
+    return { ok: true, message };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Bijwerken mislukt" };
   }
 }
 

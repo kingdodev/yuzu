@@ -268,3 +268,22 @@ export async function listSendingShops() {
       .orderBy(sql`${s.shops.magentoStoreId} nulls last`, asc(s.shops.name)),
   );
 }
+
+/** Collega's en labels voor de bulkacties in de ticketlijst. */
+export async function getBulkOptions() {
+  return asTenant(async ({ tx }, session) => {
+    const [agents, tags] = await Promise.all([
+      tx
+        .select({ id: s.users.id, name: s.users.name })
+        .from(s.memberships)
+        .innerJoin(s.users, eq(s.users.id, s.memberships.userId))
+        .where(and(eq(s.memberships.active, true), ne(s.memberships.role, "viewer")))
+        .orderBy(asc(s.users.name)),
+      tx
+        .select({ id: s.tags.id, name: s.tags.name })
+        .from(s.tags)
+        .orderBy(asc(s.tags.name)),
+    ]);
+    return { meId: session.userId, agents, tags };
+  });
+}

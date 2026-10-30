@@ -1,6 +1,13 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { canArchive, canTransition, type TicketStatus } from "@/domain/tickets";
-import { organizations, ticketEvents, tickets } from "../schema";
+import {
+  memberships,
+  organizations,
+  tags,
+  ticketEvents,
+  tickets,
+  ticketTags,
+} from "../schema";
 import type { TenantTx } from "../tenant";
 
 export type Actor =
@@ -130,4 +137,112 @@ export async function archiveTickets(
     archived.push(id);
   }
   return { archived, skipped };
+}
+
+export class InvalidAssigneeError extends Error {
+  constructor() {
+    super("Deze collega kan geen tickets krijgen.");
+    this.name = "InvalidAssigneeError";
+  }
+}
+
+/**
+ * Wijs tickets toe aan een collega (of aan niemand). Alleen actieve leden
+ * van de organisatie die tickets mogen behandelen. Tickets die al bij die
+ * persoon liggen, slaan we over.
+ */
+export async function assignTickets(
+  t: TenantTx,
+  ticketIds: readonly string[],
+  assigneeId: string | null,
+  actor: Actor,
+) {
+  if (assigneeId) {
+    const [member] = await t.tx
+      .select({ role: memberships.role })
+      .from(memberships)
+      .where(and(eq(memberships.userId, assigneeId), eq(memberships.active, true)));
+    if (!member || member.role === "viewer") throw new InvalidAssigneeError();
+  }
+  const changed: string[] = [];
+  const unchanged: string[] = [];
+  for (const id of new Set(ticketIds)) {
+    const [before] = await t.tx
+      .select({ assigneeId: tickets.assigneeId })
+      .from(tickets)
+      .where(eq(tickets.id, id))
+      .for("update");
+    if (!before || before.assigneeId === assigneeId) {
+      unchanged.push(id);
+      continue;
+    }
+    await t.tx
+      .update(tickets)
+      .set({ assigneeId, updatedAt: sql`now()` })
+      .where(eq(tickets.id, id));
+    await t.tx.insert(ticketEvents).values({
+      organizationId: t.organizationId,
+      ticketId: id,
+      type: "assigned",
+      fromValue: before.assigneeId,
+      toValue: assigneeId,
+      ...actorColumns(actor),
+    });
+    changed.push(id);
+  }
+  return { changed, unchanged };
+}
+
+/**
+ * Zet meerdere tickets op een status. Tickets waarvoor die overgang niet
+ * mag (bijv. gesloten → open) of die die status al hebben, slaan we over.
+ */
+export async function changeTicketStatuses(
+  t: TenantTx,
+  ticketIds: readonly string[],
+  to: TicketStatus,
+  actor: Actor,
+) {
+  const changed: string[] = [];
+  const skipped: string[] = [];
+  for (const id of new Set(ticketIds)) {
+    const [row] = await t.tx
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.id, id));
+    if (!row || !canTransition(row.status, to)) {
+      skipped.push(id);
+      continue;
+    }
+    await changeTicketStatus(t, id, to, actor);
+    changed.push(id);
+  }
+  return { changed, skipped };
+}
+
+/** Geef meerdere tickets een label. Tickets die het al hebben, blijven gelijk. */
+export async function addTagToTickets(
+  t: TenantTx,
+  ticketIds: readonly string[],
+  tagId: string,
+) {
+  const [tag] = await t.tx
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(eq(tags.id, tagId));
+  if (!tag) throw new Error("Dit label bestaat niet (meer).");
+  const ids = [...new Set(ticketIds)];
+  // Alleen tickets die deze organisatie echt heeft (RLS filtert de rest).
+  const existing = ids.length
+    ? await t.tx.select({ id: tickets.id }).from(tickets).where(inArray(tickets.id, ids))
+    : [];
+  if (existing.length === 0) return { tag, added: 0 };
+  const added = await t.tx
+    .insert(ticketTags)
+    .values(
+      existing.map((r) => ({ organizationId: t.organizationId, ticketId: r.id, tagId })),
+    )
+    .onConflictDoNothing()
+    .returning({ ticketId: ticketTags.ticketId });
+  return { tag, added: added.length };
 }
