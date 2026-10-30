@@ -5,7 +5,15 @@ import { contactLabel, formatDate, formatMoney, LANGUAGE_LABELS } from "@/lib/fo
 import type { TicketDetail } from "@/server/inbox";
 import { StatusPill } from "../ui";
 
-export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: string }) {
+export function CustomerPanel({
+  detail,
+  view,
+  canEmail,
+}: {
+  detail: TicketDetail;
+  view: string;
+  canEmail: boolean;
+}) {
   const { contact, customer, orders, linkedOrders, otherTickets } = detail;
   const linked = new Set(linkedOrders);
   return (
@@ -18,16 +26,18 @@ export function CustomerPanel({ detail, view }: { detail: TicketDetail; view: st
         {!contact.email.endsWith("@anoniem.invalid") && (
           <>
             <div className="break-all text-[13.5px] text-ink-soft">{contact.email}</div>
-            <Link
-              href={`/inbox/nieuw?${new URLSearchParams({
-                aan: contact.email,
-                naam: contact.name ?? "",
-                shop: detail.shop.code,
-              })}`}
-              className="mt-1 inline-block text-[13.5px] text-link hover:underline"
-            >
-              Nieuwe e-mail aan deze klant
-            </Link>
+            {canEmail && (
+              <Link
+                href={`/inbox/nieuw?${new URLSearchParams({
+                  aan: contact.email,
+                  naam: contact.name ?? "",
+                  shop: detail.shop.code,
+                })}`}
+                className="mt-1 inline-block text-[13.5px] text-link hover:underline"
+              >
+                Nieuwe e-mail aan deze klant
+              </Link>
+            )}
           </>
         )}
         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13.5px]">

@@ -62,7 +62,14 @@ export const SESSION_IDLE_DAYS = 7;
 export const INVITE_DAYS = 7;
 export const RESET_HOURS = 24;
 
-/** Remmen op raden: zoveel mislukte pogingen per kwartier. */
+/**
+ * Remmen op raden: zoveel mislukte pogingen per kwartier.
+ * - per e-mailadres vanaf één IP-adres: streng;
+ * - per e-mailadres in totaal: ruimer, zodat iemand anders je account niet
+ *   met een paar foute pogingen op slot kan zetten;
+ * - per IP-adres: tegen één aanvaller die veel adressen probeert.
+ */
 export const LOGIN_WINDOW_MINUTES = 15;
-export const MAX_FAILURES_PER_EMAIL = 8;
+export const MAX_FAILURES_PER_EMAIL_AND_IP = 8;
+export const MAX_FAILURES_PER_EMAIL = 50;
 export const MAX_FAILURES_PER_IP = 40;

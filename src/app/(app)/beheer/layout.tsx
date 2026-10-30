@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { NavLink } from "@/components/nav-link";
+import { isOwner } from "@/domain/permissions";
 import { canManage, getSession } from "@/server/session";
 
 const SECTIONS: { title: string; links: [string, string][] }[] = [
@@ -34,9 +35,7 @@ const SECTIONS: { title: string; links: [string, string][] }[] = [
 export default function BeheerLayout({ children }: LayoutProps<"/beheer">) {
   return (
     <Suspense fallback={null}>
-      <AdminOnly>
-        <BeheerShell>{children}</BeheerShell>
-      </AdminOnly>
+      <AdminOnly>{children}</AdminOnly>
     </Suspense>
   );
 }
@@ -45,10 +44,13 @@ export default function BeheerLayout({ children }: LayoutProps<"/beheer">) {
 async function AdminOnly({ children }: { children: ReactNode }) {
   const session = await getSession();
   if (!canManage(session.role)) redirect("/inbox/open");
-  return children;
+  return <BeheerShell owner={isOwner(session.role)}>{children}</BeheerShell>;
 }
 
-function BeheerShell({ children }: { children: ReactNode }) {
+/** Koppelingen en privacy zijn alleen voor de eigenaar. */
+const OWNER_ONLY = new Set(["/beheer/koppelingen", "/beheer/privacy"]);
+
+function BeheerShell({ children, owner }: { children: ReactNode; owner: boolean }) {
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
       <nav
@@ -63,11 +65,13 @@ function BeheerShell({ children }: { children: ReactNode }) {
                 <h2 className="px-2.5 pb-1 text-[12.5px] font-medium text-muted">
                   {section.title}
                 </h2>
-                {section.links.map(([href, label]) => (
-                  <NavLink key={href} href={href}>
-                    {label}
-                  </NavLink>
-                ))}
+                {section.links
+                  .filter(([href]) => owner || !OWNER_ONLY.has(href))
+                  .map(([href, label]) => (
+                    <NavLink key={href} href={href}>
+                      {label}
+                    </NavLink>
+                  ))}
               </div>
             ))}
           </div>

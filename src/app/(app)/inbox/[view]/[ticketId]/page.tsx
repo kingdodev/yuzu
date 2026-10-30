@@ -13,6 +13,7 @@ import {
 import { CustomerPanel } from "@/components/ticket/customer-panel";
 import { Thread } from "@/components/ticket/thread";
 import { ShopBadge, Skeleton } from "@/components/ui";
+import { canAssignOthers, canWorkTickets } from "@/domain/permissions";
 import { canArchive } from "@/domain/tickets";
 import { INTENT_LABELS, LANGUAGE_LABELS } from "@/lib/format";
 import { getTicketDetail, type TicketDetail } from "@/server/inbox";
@@ -44,6 +45,8 @@ async function TicketLoader({
 
 function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
   const { ticket, shop, contact } = detail;
+  const role = detail.session.role;
+  const canWork = canWorkTickets(role);
   const language = ticket.language ?? shop.language;
   const firstOrder =
     detail.orders.find((o) => detail.linkedOrders.includes(o.number)) ?? detail.orders[0];
@@ -84,22 +87,42 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
             <h1 className="min-w-0 text-[1.45rem] font-semibold leading-snug tracking-[-0.01em]">
               {ticket.subject}
             </h1>
-            {canArchive(ticket.status) && (
+            {canWork && canArchive(ticket.status) && (
               <ArchiveButton key={ticket.id} ticketId={ticket.id} view={view} />
             )}
           </div>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:max-w-2xl">
-            <StatusSelect ticketId={ticket.id} status={ticket.status} />
+            <StatusSelect
+              ticketId={ticket.id}
+              status={ticket.status}
+              readOnly={!canWork}
+            />
             <AssigneeSelect
               ticketId={ticket.id}
               assigneeId={ticket.assigneeId}
               agents={detail.agents}
+              assignableIds={canAssignOthers(role) ? undefined : [detail.session.userId]}
+              readOnly={!canWork}
             />
-            <PrioritySelect ticketId={ticket.id} priority={ticket.priority} />
+            <PrioritySelect
+              ticketId={ticket.id}
+              priority={ticket.priority}
+              readOnly={!canWork}
+            />
           </div>
           <div className="mt-3">
-            <TagPicker ticketId={ticket.id} tags={detail.tags} allTags={detail.allTags} />
+            <TagPicker
+              ticketId={ticket.id}
+              tags={detail.tags}
+              allTags={detail.allTags}
+              readOnly={!canWork}
+            />
           </div>
+          {!canWork && (
+            <p className="mt-3 text-[13px] text-muted">
+              Je leest mee: je kunt notities plaatsen, maar niets wijzigen of mailen.
+            </p>
+          )}
         </header>
 
         <div className="space-y-6 px-5 py-6 lg:px-7">
@@ -122,12 +145,13 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
             templates={detail.templates}
             templateVars={templateVars}
             closed={ticket.status === "closed"}
+            notesOnly={!canWork}
           />
         </div>
       </div>
 
       <aside className="shrink-0 border-t border-line bg-panel px-5 py-5 xl:w-[330px] xl:overflow-y-auto xl:border-l xl:border-t-0">
-        <CustomerPanel detail={detail} view={view} />
+        <CustomerPanel detail={detail} view={view} canEmail={canWork} />
       </aside>
     </div>
   );

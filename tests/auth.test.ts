@@ -12,16 +12,17 @@ import {
   findActiveOwner,
   findLoginUser,
   findSession,
-  isLoginBlocked,
+  beginLoginAttempt,
+  markLoginSuccess,
   peekAuthToken,
-  recordLoginAttempt,
-  setPasswordHash,
+  setFirstOwnerPassword,
 } from "@/db/repositories/auth";
 import * as s from "@/db/schema";
 import { withPrivileged, withTenant } from "@/db/tenant";
 import type { Db } from "@/db/types";
 import {
   MAX_FAILURES_PER_EMAIL,
+  MAX_FAILURES_PER_EMAIL_AND_IP,
   MAX_FAILURES_PER_IP,
   passwordProblem,
   safeNextPath,
@@ -109,11 +110,22 @@ describe("inloggen in de database", () => {
     }
   });
 
-  it("kent het eerste wachtwoord alleen toe aan een actieve eigenaar", async () => {
+  it("kent het eerste wachtwoord alleen toe aan een actieve eigenaar, en maar één keer", async () => {
     expect(await anyPasswordSet(db)).toBe(false);
-    expect(await findActiveOwner(db, "eigenaar@example.nl")).toEqual({ userId: owner });
     expect(await findActiveOwner(db, "agent@example.nl")).toBeNull();
-    await setPasswordHash(db, owner, await hashPassword("Gele-yuzu-op-zondag"));
+    const hash = await hashPassword("Gele-yuzu-op-zondag");
+    expect(await setFirstOwnerPassword(db, "agent@example.nl", hash)).toEqual({
+      ok: false,
+      reason: "not_owner",
+    });
+    expect(await setFirstOwnerPassword(db, "eigenaar@example.nl", hash)).toEqual({
+      ok: true,
+      userId: owner,
+    });
+    expect(await setFirstOwnerPassword(db, "eigenaar@example.nl", hash)).toEqual({
+      ok: false,
+      reason: "taken",
+    });
     expect(await anyPasswordSet(db)).toBe(true);
 
     const found = await findLoginUser(db, "eigenaar@example.nl");
@@ -234,33 +246,65 @@ describe("inloggen in de database", () => {
     ).toBeNull();
   });
 
-  it("remt raden per e-mailadres en per IP-adres", async () => {
+  it("remt raden per e-mailadres en IP, per e-mailadres en per IP", async () => {
     const key = {
       emailHash: sha256("email:doelwit@example.nl"),
       ipHash: sha256("ip:1.2.3.4"),
     };
-    for (let i = 0; i < MAX_FAILURES_PER_EMAIL - 1; i++) {
-      await recordLoginAttempt(db, { ...key, success: false });
+    for (let i = 0; i < MAX_FAILURES_PER_EMAIL_AND_IP; i++) {
+      expect((await beginLoginAttempt(db, key)).blocked).toBe(false);
     }
-    expect(await isLoginBlocked(db, key)).toBe(false);
-    await recordLoginAttempt(db, { ...key, success: false });
-    expect(await isLoginBlocked(db, key)).toBe(true);
-    // Een ander adres vanaf hetzelfde IP mag nog.
-    const other = { emailHash: sha256("email:ander@example.nl"), ipHash: key.ipHash };
-    expect(await isLoginBlocked(db, other)).toBe(false);
+    expect((await beginLoginAttempt(db, key)).blocked).toBe(true);
+    // Iemand anders (ander IP) kan dit account niet zomaar op slot zetten.
+    const owner = { emailHash: key.emailHash, ipHash: sha256("ip:9.9.9.9") };
+    expect((await beginLoginAttempt(db, owner)).blocked).toBe(false);
     // Na een kwartier weer wel.
-    expect(await isLoginBlocked(db, key, new Date(Date.now() + 16 * 60 * 1000))).toBe(
-      false,
-    );
+    expect(
+      (await beginLoginAttempt(db, key, new Date(Date.now() + 16 * 60 * 1000))).blocked,
+    ).toBe(false);
 
-    const ipKey = { emailHash: "x", ipHash: sha256("ip:5.6.7.8") };
+    // Veel IP-adressen samen: na MAX_FAILURES_PER_EMAIL is het e-mailadres dicht.
+    const many = sha256("email:veel@example.nl");
+    for (let i = 0; i < MAX_FAILURES_PER_EMAIL; i++) {
+      await beginLoginAttempt(db, { emailHash: many, ipHash: sha256(`ip:10.0.0.${i}`) });
+    }
+    expect(
+      (await beginLoginAttempt(db, { emailHash: many, ipHash: sha256("ip:x") })).blocked,
+    ).toBe(true);
+
+    // Eén IP dat veel adressen probeert.
+    const ip = sha256("ip:5.6.7.8");
     for (let i = 0; i < MAX_FAILURES_PER_IP; i++) {
-      await recordLoginAttempt(db, {
+      await beginLoginAttempt(db, {
         emailHash: sha256(`email:${i}@example.nl`),
-        ipHash: ipKey.ipHash,
-        success: false,
+        ipHash: ip,
       });
     }
-    expect(await isLoginBlocked(db, ipKey)).toBe(true);
+    expect(
+      (await beginLoginAttempt(db, { emailHash: "nieuw", ipHash: ip })).blocked,
+    ).toBe(true);
+  });
+
+  it("telt gelijktijdige pogingen mee", async () => {
+    const key = {
+      emailHash: sha256("email:tegelijk@example.nl"),
+      ipHash: sha256("ip:7.7.7.7"),
+    };
+    const results = await Promise.all(
+      Array.from({ length: 30 }, () => beginLoginAttempt(db, key)),
+    );
+    expect(results.filter((r) => !r.blocked)).toHaveLength(MAX_FAILURES_PER_EMAIL_AND_IP);
+  });
+
+  it("een geslaagde poging telt niet als fout", async () => {
+    const key = {
+      emailHash: sha256("email:goed@example.nl"),
+      ipHash: sha256("ip:8.8.8.8"),
+    };
+    for (let i = 0; i < MAX_FAILURES_PER_EMAIL_AND_IP + 2; i++) {
+      const attempt = await beginLoginAttempt(db, key);
+      expect(attempt.blocked).toBe(false);
+      if (!attempt.blocked) await markLoginSuccess(db, attempt.attemptId);
+    }
   });
 });

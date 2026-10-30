@@ -28,9 +28,11 @@ function Labeled({ label, children }: { label: string; children: React.ReactNode
 export function StatusSelect({
   ticketId,
   status,
+  readOnly = false,
 }: {
   ticketId: string;
   status: TicketStatus;
+  readOnly?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function StatusSelect({
       <select
         className="field py-1.5"
         value={status}
-        disabled={pending || options.length === 1}
+        disabled={readOnly || pending || options.length === 1}
         onChange={(e) =>
           start(async () => {
             const r = await setTicketStatus(ticketId, e.target.value);
@@ -63,29 +65,40 @@ export function AssigneeSelect({
   ticketId,
   assigneeId,
   agents,
+  assignableIds,
+  readOnly = false,
 }: {
   ticketId: string;
   assigneeId: string | null;
   agents: { id: string; name: string }[];
+  /** Aan wie jij mag toewijzen; leeg = iedereen. */
+  assignableIds?: string[];
+  readOnly?: boolean;
 }) {
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const allowed = (id: string) => !assignableIds || assignableIds.includes(id);
   return (
     <Labeled label="Eigenaar">
       <select
         className="field py-1.5"
         value={assigneeId ?? ""}
-        disabled={pending}
+        disabled={readOnly || pending}
         onChange={(e) =>
-          start(async () => void (await assignTicket(ticketId, e.target.value || null)))
+          start(async () => {
+            const r = await assignTicket(ticketId, e.target.value || null);
+            setError(r.ok ? null : r.error);
+          })
         }
       >
         <option value="">Niemand</option>
         {agents.map((a) => (
-          <option key={a.id} value={a.id}>
+          <option key={a.id} value={a.id} disabled={!allowed(a.id)}>
             {a.name}
           </option>
         ))}
       </select>
+      {error && <span className="text-xs text-alert">{error}</span>}
     </Labeled>
   );
 }
@@ -100,9 +113,11 @@ const PRIORITIES = [
 export function PrioritySelect({
   ticketId,
   priority,
+  readOnly = false,
 }: {
   ticketId: string;
   priority: string;
+  readOnly?: boolean;
 }) {
   const [pending, start] = useTransition();
   return (
@@ -110,7 +125,7 @@ export function PrioritySelect({
       <select
         className="field py-1.5"
         value={priority}
-        disabled={pending}
+        disabled={readOnly || pending}
         onChange={(e) =>
           start(async () => void (await setTicketPriority(ticketId, e.target.value)))
         }
@@ -129,10 +144,12 @@ export function TagPicker({
   ticketId,
   tags,
   allTags,
+  readOnly = false,
 }: {
   ticketId: string;
   tags: { id: string; name: string; color: string }[];
   allTags: { id: string; name: string; color: string }[];
+  readOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -142,16 +159,18 @@ export function TagPicker({
       {tags.map((t) => (
         <TagChip key={t.id} name={t.name} color={t.color} />
       ))}
-      <button
-        type="button"
-        className="btn btn-quiet px-2 py-0.5 text-[13px]"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Plus className="h-3.5 w-3.5" aria-hidden />
-        Label
-      </button>
-      {open && (
+      {!readOnly && (
+        <button
+          type="button"
+          className="btn btn-quiet px-2 py-0.5 text-[13px]"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Label
+        </button>
+      )}
+      {open && !readOnly && (
         <ul className="absolute left-0 top-full z-10 mt-1 w-52 rounded-lg border border-line bg-panel p-1 shadow-lg">
           {allTags.map((t) => (
             <li key={t.id}>

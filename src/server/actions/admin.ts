@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -11,7 +11,8 @@ import * as s from "@/db/schema";
 import { getFileStore } from "@/integrations/storage";
 import { withPrivileged, type TenantTx } from "@/db/tenant";
 import { normalizeEmail } from "@/domain/contacts";
-import { asAdmin, type Session } from "../session";
+import { isOwner, requirePermission } from "@/domain/permissions";
+import { asAdmin, asOwner, type Session } from "../session";
 
 export type FormState =
   { ok: true; message: string } | { ok: false; error: string } | null;
@@ -22,8 +23,55 @@ const lang = z.enum(["nl", "fr", "es", "en", "de"]);
 function fail(e: unknown): FormState {
   if (e instanceof z.ZodError)
     return { ok: false, error: e.issues[0]?.message ?? "Controleer de invoer" };
-  if (e instanceof Error) return { ok: false, error: e.message };
-  return { ok: false, error: "Opslaan mislukt" };
+  // Databasefouten (met een `cause` van Postgres) niet letterlijk tonen.
+  if (e instanceof Error && e.cause === undefined) return { ok: false, error: e.message };
+  // Alleen de foutcode loggen: de melding bevat de queryparameters (bijv. e-mailadressen).
+  if (e instanceof Error) {
+    console.error(
+      "Opslaan mislukt",
+      (e.cause as { code?: string } | undefined)?.code ?? "onbekend",
+    );
+  }
+  return { ok: false, error: "Opslaan mislukt. Probeer het opnieuw." };
+}
+
+/**
+ * Controleer dat ID's uit een formulier bij de eigen organisatie horen. RLS
+ * beschermt de rijen zelf, maar niet de verwijzingen ernaar: zonder deze
+ * controle kun je een rij maken die naar een shop of team van een andere
+ * organisatie wijst.
+ */
+async function assertOwn(
+  tx: TenantTx["tx"],
+  kind: "shop" | "team" | "member",
+  ids: readonly (string | null)[],
+) {
+  const wanted = [...new Set(ids.filter((id): id is string => id !== null))];
+  if (wanted.length === 0) return;
+  const found =
+    kind === "shop"
+      ? await tx
+          .select({ id: s.shops.id })
+          .from(s.shops)
+          .where(inArray(s.shops.id, wanted))
+      : kind === "team"
+        ? await tx
+            .select({ id: s.teams.id })
+            .from(s.teams)
+            .where(inArray(s.teams.id, wanted))
+        : await tx
+            .select({ id: s.memberships.userId })
+            .from(s.memberships)
+            .where(inArray(s.memberships.userId, wanted));
+  if (found.length !== wanted.length) {
+    throw new Error(
+      kind === "shop"
+        ? "Onbekende shop"
+        : kind === "team"
+          ? "Onbekend team"
+          : "Onbekende gebruiker",
+    );
+  }
 }
 
 async function audit(
@@ -138,6 +186,10 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
     const role = roleSchema.parse(form.get("role"));
     // Gebruikers zijn organisatie-overstijgend; aanmaken mag alleen via een beheerpad.
     const session = await asAdmin(async (_t, session) => session);
+    requirePermission(
+      role !== "owner" || isOwner(session.role),
+      "Alleen een eigenaar kan iemand eigenaar maken.",
+    );
     const db = await getDb();
     const userId = await withPrivileged(db, async (tx) => {
       const [existing] = await tx
@@ -152,13 +204,18 @@ export async function inviteMember(_: FormState, form: FormData): Promise<FormSt
       return row.id;
     });
     await asAdmin(async (t) => {
-      await t.tx
+      // Bestaande leden niet aanraken: rol en status wijzig je in de lijst
+      // (updateMember), met de controles die daar gelden.
+      const added = await t.tx
         .insert(s.memberships)
         .values({ organizationId: t.organizationId, userId, role })
-        .onConflictDoUpdate({
-          target: [s.memberships.organizationId, s.memberships.userId],
-          set: { active: true, role },
-        });
+        .onConflictDoNothing()
+        .returning({ userId: s.memberships.userId });
+      if (added.length === 0) {
+        throw new Error(
+          "Deze persoon is al lid. Wijzig de rol of zet hem weer op actief in de lijst hierboven.",
+        );
+      }
       await audit(t, session, "member_invited", "user", userId, { role });
     });
   } catch (e) {
@@ -185,6 +242,10 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         .from(s.memberships)
         .where(eq(s.memberships.userId, userId));
       if (!before) throw new Error("Gebruiker niet gevonden");
+      requirePermission(
+        isOwner(session.role) || (before.role !== "owner" && role !== "owner"),
+        "Alleen een eigenaar kan eigenaars wijzigen of iemand eigenaar maken.",
+      );
       if (before.role === "owner" && (role !== "owner" || !active)) {
         const owners = await t.tx
           .select({ id: s.memberships.userId })
@@ -203,6 +264,7 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         .update(s.memberships)
         .set({ role, allShops, active })
         .where(eq(s.memberships.userId, userId));
+      await assertOwn(t.tx, "shop", shopIds);
       await t.tx.delete(s.memberShops).where(eq(s.memberShops.userId, userId));
       if (!allShops && shopIds.length > 0) {
         await t.tx.insert(s.memberShops).values(
@@ -262,6 +324,8 @@ export async function toggleTeamMember(teamId: string, userId: string) {
   const team = uuid.parse(teamId);
   const user = uuid.parse(userId);
   await asAdmin(async ({ tx, organizationId }) => {
+    await assertOwn(tx, "team", [team]);
+    await assertOwn(tx, "member", [user]);
     const removed = await tx
       .delete(s.teamMembers)
       .where(and(eq(s.teamMembers.teamId, team), eq(s.teamMembers.userId, user)))
@@ -321,14 +385,15 @@ export async function saveTemplate(_: FormState, form: FormData): Promise<FormSt
     const language = lang.parse(form.get("language"));
     const shopId = form.get("shopId") ? uuid.parse(form.get("shopId")) : null;
     const body = z.string().trim().min(1, "Het sjabloon is leeg").parse(form.get("body"));
-    await asAdmin(({ tx, organizationId }) =>
-      id
+    await asAdmin(async ({ tx, organizationId }) => {
+      await assertOwn(tx, "shop", [shopId]);
+      return id
         ? tx
             .update(s.templates)
             .set({ name, language, shopId, body, updatedAt: sql`now()` })
             .where(eq(s.templates.id, id))
-        : tx.insert(s.templates).values({ organizationId, name, language, shopId, body }),
-    );
+        : tx.insert(s.templates).values({ organizationId, name, language, shopId, body });
+    });
   } catch (e) {
     return fail(e);
   }
@@ -353,6 +418,8 @@ export async function addKnowledgeUrl(_: FormState, form: FormData): Promise<For
       .string()
       .trim()
       .url("Vul een volledige URL in, met https://")
+      // Alleen webpagina's: geen javascript:, file: of andere schema's.
+      .refine((u) => /^https?:\/\//i.test(u), "Alleen adressen die met https:// beginnen")
       .parse(form.get("url"));
     await asAdmin(async ({ tx, organizationId }) => {
       const [shop] = await tx
@@ -403,8 +470,9 @@ export async function addKnowledgeNote(_: FormState, form: FormData): Promise<Fo
       .trim()
       .min(1, "De notitie is leeg")
       .parse(form.get("content"));
-    await asAdmin(({ tx, organizationId }) =>
-      tx.insert(s.knowledgeSources).values({
+    await asAdmin(async ({ tx, organizationId }) => {
+      await assertOwn(tx, "shop", [shopId]);
+      return tx.insert(s.knowledgeSources).values({
         organizationId,
         shopId,
         kind: "note",
@@ -412,8 +480,8 @@ export async function addKnowledgeNote(_: FormState, form: FormData): Promise<Fo
         contentText,
         status: "indexed",
         lastCrawledAt: new Date(),
-      }),
-    );
+      });
+    });
   } catch (e) {
     return fail(e);
   }
@@ -433,15 +501,16 @@ export async function uploadKnowledgeFile(
       throw new Error("Bestanden mogen maximaal 20 MB zijn");
     if (!/\.(pdf|docx|txt|md|csv)$/i.test(file.name))
       throw new Error("Alleen PDF, DOCX, TXT, MD of CSV");
-    await asAdmin(({ tx, organizationId }) =>
-      tx.insert(s.knowledgeSources).values({
+    await asAdmin(async ({ tx, organizationId }) => {
+      await assertOwn(tx, "shop", [shopId]);
+      return tx.insert(s.knowledgeSources).values({
         organizationId,
         shopId,
         kind: "upload",
         title: file.name,
         status: "pending",
-      }),
-    );
+      });
+    });
   } catch (e) {
     return fail(e);
   }
@@ -534,7 +603,7 @@ export async function saveRetention(_: FormState, form: FormData): Promise<FormS
       .min(7, "Minimaal 7 dagen")
       .max(3650)
       .parse(form.get("attachments"));
-    await asAdmin(async (t, session) => {
+    await asOwner(async (t, session) => {
       await t.tx
         .update(s.shops)
         .set({
@@ -565,15 +634,27 @@ export async function anonymizeContact(_: FormState, form: FormData): Promise<Fo
     const contactId = uuid.parse(form.get("contactId"));
     if (form.get("confirm") !== "VERWIJDER")
       throw new Error("Typ VERWIJDER om te bevestigen");
-    const fileKeys = await asAdmin(async (t, session) => {
+    const fileKeys = await asOwner(async (t, session) => {
       const ticketIds = (
         await t.tx
           .select({ id: s.tickets.id })
           .from(s.tickets)
           .where(eq(s.tickets.contactId, contactId))
       ).map((r) => r.id);
-      // Bijlagen kunnen ook persoonsgegevens bevatten (foto's, facturen).
+      // Bijlagen en de ruwe mails kunnen ook persoonsgegevens bevatten.
       const keys = await deleteAttachmentsOfTickets(t, ticketIds);
+      if (ticketIds.length > 0) {
+        const raw = await t.tx
+          .select({ key: s.messages.rawStorageKey })
+          .from(s.messages)
+          .where(
+            and(
+              inArray(s.messages.ticketId, ticketIds),
+              isNotNull(s.messages.rawStorageKey),
+            ),
+          );
+        keys.push(...raw.map((r) => r.key!));
+      }
       await t.tx
         .update(s.contacts)
         .set({
@@ -588,6 +669,7 @@ export async function anonymizeContact(_: FormState, form: FormData): Promise<Fo
         await t.tx
           .update(s.messages)
           .set({
+            subject: null,
             bodyText: "[verwijderd op verzoek van de klant]",
             bodyHtml: null,
             translatedText: null,
@@ -597,15 +679,19 @@ export async function anonymizeContact(_: FormState, form: FormData): Promise<Fo
             rawStorageKey: null,
           })
           .where(inArray(s.messages.ticketId, ticketIds));
+        // Ordernummers zijn via Magento terug te voeren op de klant.
+        await t.tx
+          .delete(s.ticketOrders)
+          .where(inArray(s.ticketOrders.ticketId, ticketIds));
         await t.tx
           .update(s.tickets)
           .set({ subject: "[verwijderd]" })
           .where(inArray(s.tickets.id, ticketIds));
         await t.tx.delete(s.aiDrafts).where(inArray(s.aiDrafts.ticketId, ticketIds));
-        await t.tx
-          .delete(s.contactMagentoLinks)
-          .where(eq(s.contactMagentoLinks.contactId, contactId));
       }
+      await t.tx
+        .delete(s.contactMagentoLinks)
+        .where(eq(s.contactMagentoLinks.contactId, contactId));
       await audit(t, session, "contact_anonymized", "contact", contactId, {
         tickets: ticketIds.length,
         attachments: keys.length,

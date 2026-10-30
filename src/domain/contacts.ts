@@ -8,7 +8,8 @@
 export function normalizeEmail(input: string): string {
   const email = input.trim().toLowerCase();
   if (!isPlausibleEmail(email)) {
-    throw new Error(`Ongeldig e-mailadres: ${JSON.stringify(input)}`);
+    // Bewust zonder het adres zelf: foutmeldingen kunnen in logs belanden.
+    throw new Error("Ongeldig e-mailadres");
   }
   return email;
 }

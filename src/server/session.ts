@@ -11,7 +11,10 @@ import { DEMO_ORG_SLUG, DEMO_USER_ID } from "@/db/seed/demo";
 import { withPrivileged, withTenant, type TenantTx } from "@/db/tenant";
 import { readSessionToken } from "./auth";
 
-export type Role = "owner" | "admin" | "teamlead" | "agent" | "viewer";
+import { canManage, isOwner, type Role } from "@/domain/permissions";
+
+export type { Role } from "@/domain/permissions";
+export { canManage } from "@/domain/permissions";
 
 export type Session = {
   userId: string;
@@ -72,17 +75,15 @@ export const getOptionalSession = cache(async (): Promise<Session | null> => {
   };
 });
 
-export function canManage(role: Role): boolean {
-  return role === "owner" || role === "admin";
-}
-
 /** Database-werk namens de ingelogde gebruiker, binnen zijn organisatie. */
 export async function asTenant<T>(
   fn: (t: TenantTx, session: Session) => Promise<T>,
 ): Promise<T> {
   const session = await getSession();
   const db = await getDb();
-  return withTenant(db, session.organizationId, (t) => fn(t, session));
+  return withTenant(db, session.organizationId, (t) => fn(t, session), {
+    userId: session.userId,
+  });
 }
 
 /** Alleen voor beheerders; anderen gaan terug naar de inbox. */
@@ -91,5 +92,14 @@ export async function asAdmin<T>(
 ): Promise<T> {
   const session = await getSession();
   if (!canManage(session.role)) redirect("/inbox/open");
+  return asTenant(fn);
+}
+
+/** Alleen voor de eigenaar (koppelingen, privacy); anderen gaan naar beheer. */
+export async function asOwner<T>(
+  fn: (t: TenantTx, session: Session) => Promise<T>,
+): Promise<T> {
+  const session = await getSession();
+  if (!isOwner(session.role)) redirect("/beheer/shops");
   return asTenant(fn);
 }

@@ -21,7 +21,10 @@ export function supabaseStore(url: string, secretKey: string): FileStore {
     kind: "supabase",
 
     async createUpload(key, contentType) {
-      const { data, error } = await bucket().createSignedUploadUrl(key);
+      // Nooit een bestaand bestand overschrijven.
+      const { data, error } = await bucket().createSignedUploadUrl(key, {
+        upsert: false,
+      });
       if (error) throw new Error(`Upload voorbereiden mislukt: ${error.message}`);
       return {
         url: data.signedUrl,

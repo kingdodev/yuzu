@@ -15,6 +15,7 @@ import {
 import { attachmentsForTicket } from "@/db/repositories/attachments";
 import { searchTickets } from "@/db/repositories/search";
 import * as s from "@/db/schema";
+import { canAssignOthers, canWorkTickets } from "@/domain/permissions";
 import { parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
 import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
@@ -264,7 +265,7 @@ export async function listSendingShops() {
         signature: s.shops.signature,
       })
       .from(s.shops)
-      .where(eq(s.shops.active, true))
+      .where(and(eq(s.shops.active, true), sql`app_visible_shop(${s.shops.id})`))
       .orderBy(sql`${s.shops.magentoStoreId} nulls last`, asc(s.shops.name)),
   );
 }
@@ -284,6 +285,25 @@ export async function getBulkOptions() {
         .from(s.tags)
         .orderBy(asc(s.tags.name)),
     ]);
-    return { meId: session.userId, agents, tags };
+    return {
+      meId: session.userId,
+      // Meelezers vinken niets aan; agents wijzen alleen aan zichzelf toe.
+      canWork: canWorkTickets(session.role),
+      agents: canAssignOthers(session.role)
+        ? agents
+        : agents.filter((a) => a.id === session.userId),
+      tags,
+    };
   });
 }
+
+/** Codes van de shops waar de ingelogde gebruiker toegang toe heeft. */
+export const getVisibleShopCodes = cache(async (): Promise<string[]> => {
+  return asTenant(async ({ tx }) => {
+    const rows = await tx
+      .select({ code: s.shops.code })
+      .from(s.shops)
+      .where(sql`app_visible_shop(${s.shops.id})`);
+    return rows.map((r) => r.code);
+  });
+});

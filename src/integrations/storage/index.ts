@@ -20,8 +20,10 @@ export function getFileStore(): FileStore | null {
   const url = process.env.SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SECRET_KEY?.trim();
   let store: FileStore | null = null;
-  if (url && key) store = supabaseStore(url, key);
-  else if (!process.env.DATABASE_URL) {
+  // Supabase alleen samen met een echte database (en dus met inloggen); anders
+  // zou de lokale demo (iedereen is Frank) in de echte opslag kunnen schrijven.
+  if (url && key && process.env.DATABASE_URL) store = supabaseStore(url, key);
+  else if (!process.env.DATABASE_URL && process.env.VERCEL_ENV !== "production") {
     store = localStore(`${demoDataDir()}-files`, randomBytes(32).toString("hex"));
   }
   cache.__yuzuFileStore = store;

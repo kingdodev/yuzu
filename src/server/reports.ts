@@ -1,4 +1,6 @@
 import "server-only";
+import { redirect } from "next/navigation";
+import { canSeeReports } from "@/domain/permissions";
 import { sql } from "drizzle-orm";
 import { asTenant } from "./session";
 
@@ -9,7 +11,9 @@ function rows<T>(result: unknown): T[] {
 
 /** Basiscijfers voor de rapportagepagina. Tijden in werkelijke minuten, nog niet in werkuren. */
 export function getReport() {
-  return asTenant(async ({ tx }) => {
+  return asTenant(async ({ tx }, session) => {
+    // Rapportages zijn voor teamleiders, beheerders en eigenaars.
+    if (!canSeeReports(session.role)) redirect("/inbox/open");
     const [totals, perShop, perIntent, perDay, ai] = await Promise.all([
       tx.execute(sql`
         select

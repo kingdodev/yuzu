@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { TicketStatus } from "@/domain/tickets";
 import { messages, shops, ticketEvents, tickets } from "../schema";
 import type { TenantTx } from "../tenant";
@@ -74,7 +74,7 @@ export async function startOutboundTicket(
   const [shop] = await t.tx
     .select({ id: shops.id, language: shops.language, active: shops.active })
     .from(shops)
-    .where(eq(shops.id, input.shopId));
+    .where(and(eq(shops.id, input.shopId), sql`app_visible_shop(${shops.id})`));
   if (!shop || !shop.active) throw new ShopNotFoundError();
 
   const actor = { type: "user", userId: input.userId } as const;

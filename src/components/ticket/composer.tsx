@@ -21,6 +21,8 @@ type Props = {
   templates: { id: string; name: string; body: string }[];
   templateVars: Record<string, string>;
   closed: boolean;
+  /** Meelezers mogen alleen notities plaatsen. */
+  notesOnly?: boolean;
 };
 
 export function Composer(props: Props) {
@@ -32,8 +34,9 @@ export function Composer(props: Props) {
     templates,
     templateVars,
     closed,
+    notesOnly = false,
   } = props;
-  const [mode, setMode] = useState<"reply" | "note">("reply");
+  const [mode, setMode] = useState<"reply" | "note">(notesOnly ? "note" : "reply");
   const [text, setText] = useState("");
   const [usedDraftId, setUsedDraftId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState<"pending_customer" | "solved" | "open">(
@@ -100,7 +103,7 @@ export function Composer(props: Props) {
 
   return (
     <div className="space-y-4">
-      {draft && !usedDraftId && (
+      {draft && !usedDraftId && !notesOnly && (
         <section
           aria-label="Concept van Yuzu"
           className="overflow-hidden rounded-xl border border-yuzu bg-yuzu-soft"
@@ -117,7 +120,8 @@ export function Composer(props: Props) {
               <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-yuzu-ink/80">
                 Gebaseerd op
                 {draft.sources.map((src) =>
-                  src.url ? (
+                  // Bronnen komen uit de AI (te beïnvloeden via klantmail): alleen webadressen als link.
+                  src.url && /^https?:\/\//i.test(src.url) ? (
                     <a
                       key={src.title}
                       href={src.url}
@@ -182,23 +186,25 @@ export function Composer(props: Props) {
               ["reply", "Antwoord aan klant"],
               ["note", "Interne notitie"],
             ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              role="tab"
-              type="button"
-              aria-selected={mode === value}
-              disabled={value === "reply" && closed}
-              onClick={() => setMode(value)}
-              className={`-mb-px rounded-t-md border-b-2 px-3 py-2 text-[14px] ${
-                mode === value
-                  ? "border-ink font-semibold text-ink"
-                  : "border-transparent text-muted hover:text-ink"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          )
+            .filter(([value]) => !(notesOnly && value === "reply"))
+            .map(([value, label]) => (
+              <button
+                key={value}
+                role="tab"
+                type="button"
+                aria-selected={mode === value}
+                disabled={value === "reply" && (closed || notesOnly)}
+                onClick={() => setMode(value)}
+                className={`-mb-px rounded-t-md border-b-2 px-3 py-2 text-[14px] ${
+                  mode === value
+                    ? "border-ink font-semibold text-ink"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
         </div>
 
         <div className={`p-3 ${mode === "note" ? "bg-note" : ""}`}>

@@ -23,11 +23,14 @@ export function MemberRow({
   member,
   shops,
   showLogin,
+  viewerIsOwner,
 }: {
   member: Member;
   shops: { id: string; code: string; name: string }[];
   /** Inloggegevens tonen (niet in de lokale demo). */
   showLogin: boolean;
+  /** De kijker is eigenaar (mag ook links voor bestaande accounts maken). */
+  viewerIsOwner: boolean;
 }) {
   const [allShops, setAllShops] = useState(member.allShops);
   return (
@@ -100,11 +103,14 @@ export function MemberRow({
                 : "Wachtwoord ingesteld, nog niet ingelogd"
               : "Nog geen wachtwoord"}
           </p>
-          <PasswordLink
-            userId={member.userId}
-            hasPassword={member.passwordSetAt !== null}
-            disabled={!member.active}
-          />
+          {(viewerIsOwner ||
+            (member.passwordSetAt === null && member.role !== "owner")) && (
+            <PasswordLink
+              userId={member.userId}
+              hasPassword={member.passwordSetAt !== null}
+              disabled={!member.active}
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import * as s from "@/db/schema";
-import { asAdmin } from "./session";
+import { asAdmin, asOwner } from "./session";
 
 export function listShops() {
   return asAdmin(({ tx }) =>
@@ -159,7 +159,7 @@ export function listAiSettings() {
 }
 
 export function listIntegrations() {
-  return asAdmin(async ({ tx }) => {
+  return asOwner(async ({ tx }) => {
     const [rows, shops] = await Promise.all([
       tx.select().from(s.integrations),
       tx
@@ -178,7 +178,7 @@ export function listIntegrations() {
 }
 
 export function listRetention() {
-  return asAdmin(({ tx }) =>
+  return asOwner(({ tx }) =>
     tx
       .select({
         id: s.shops.id,
@@ -195,7 +195,7 @@ export function listRetention() {
 export function findContact(email: string) {
   const q = email.trim().toLowerCase();
   if (!q) return Promise.resolve(null);
-  return asAdmin(async ({ tx }) => {
+  return asOwner(async ({ tx }) => {
     const [contact] = await tx.select().from(s.contacts).where(eq(s.contacts.email, q));
     if (!contact) return null;
     const [{ n }] = await tx
@@ -219,7 +219,7 @@ export function listAudit() {
 
 /** Alles wat Yuzu over één contact bewaart, voor een inzageverzoek (AVG art. 15). */
 export function exportContact(email: string) {
-  return asAdmin(async ({ tx, organizationId }, session) => {
+  return asOwner(async ({ tx, organizationId }, session) => {
     const [contact] = await tx
       .select()
       .from(s.contacts)

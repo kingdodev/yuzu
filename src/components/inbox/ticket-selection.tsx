@@ -24,6 +24,8 @@ const SelectionContext = createContext<Selection | null>(null);
 
 export type BulkOptions = {
   meId: string;
+  /** Mag tickets wijzigen (geen meelezer). */
+  canWork: boolean;
   agents: { id: string; name: string }[];
   tags: { id: string; name: string }[];
 };
@@ -51,6 +53,7 @@ export function TicketSelection({
   children: ReactNode;
 }) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const enabled = options.canWork;
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
 
@@ -92,11 +95,11 @@ export function TicketSelection({
   const selectClass = "field w-auto min-w-0 flex-1 py-1.5 text-[13.5px]";
 
   return (
-    <SelectionContext.Provider value={{ selected, toggle }}>
+    <SelectionContext.Provider value={enabled ? { selected, toggle } : null}>
       <div className="flex h-full flex-col">
         <div className="border-b border-line px-4 pb-3 pt-4">
           <div className="flex items-center gap-3">
-            {ids.length > 0 && (
+            {enabled && ids.length > 0 && (
               <input
                 type="checkbox"
                 aria-label="Alle tickets selecteren"

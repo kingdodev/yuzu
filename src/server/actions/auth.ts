@@ -13,18 +13,20 @@ import {
   deleteSession,
   deleteUserSessions,
   expireAuthTokens,
-  findActiveOwner,
   findLoginUser,
   getPasswordHash,
-  isLoginBlocked,
+  hasOtherMemberships,
+  beginLoginAttempt,
+  markLoginSuccess,
   peekAuthToken,
-  recordLoginAttempt,
+  setFirstOwnerPassword as setFirstOwnerPasswordOnce,
   setPasswordHash,
 } from "@/db/repositories/auth";
 import * as s from "@/db/schema";
 import { withPrivileged, withTenant } from "@/db/tenant";
 import type { Db } from "@/db/types";
 import { MAX_PASSWORD_LENGTH, passwordProblem, safeNextPath } from "@/domain/auth";
+import { passwordLinkProblem } from "@/domain/permissions";
 import { isPlausibleEmail } from "@/domain/contacts";
 import { dummyPasswordHash, hashPassword, verifyPassword } from "@/lib/password";
 import {
@@ -38,6 +40,7 @@ import { asAdmin, getSession } from "../session";
 import type { FormState } from "./admin";
 
 const WRONG = "E-mailadres of wachtwoord klopt niet.";
+const TOO_MANY = "Te veel mislukte pogingen. Probeer het over een kwartier opnieuw.";
 
 function str(form: FormData, key: string): string {
   const v = form.get(key);
@@ -93,34 +96,24 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
     return { ok: false, error: WRONG };
   }
   const db = await getDb();
-  const key = { emailHash: emailHash(email), ipHash: await clientIpHash() };
-  if (await isLoginBlocked(db, key)) {
-    return {
-      ok: false,
-      error: "Te veel mislukte pogingen. Probeer het over een kwartier opnieuw.",
-    };
-  }
+  const attempt = await beginLoginAttempt(db, {
+    emailHash: emailHash(email),
+    ipHash: await clientIpHash(),
+  });
+  if (attempt.blocked) return { ok: false, error: TOO_MANY };
 
   const user = await findLoginUser(db, email);
   // Ook zonder bekend adres even lang rekenen, zodat je niet kunt afleiden welke adressen bestaan.
   const matches = user?.passwordHash
     ? await verifyPassword(password, user.passwordHash)
     : (await verifyPassword(password, await dummyPasswordHash()), false);
-
-  if (!user || !matches) {
-    await recordLoginAttempt(db, { ...key, success: false });
+  // Een uitgeschakeld account krijgt dezelfde melding, zodat je niet kunt
+  // afleiden of het wachtwoord klopte.
+  if (!user || !matches || user.activeMemberships === 0) {
     return { ok: false, error: WRONG };
   }
-  if (user.activeMemberships === 0) {
-    await recordLoginAttempt(db, { ...key, success: false });
-    return {
-      ok: false,
-      error:
-        "Je account is uitgeschakeld. Vraag een beheerder om je weer toegang te geven.",
-    };
-  }
 
-  await recordLoginAttempt(db, { ...key, success: true });
+  await markLoginSuccess(db, attempt.attemptId);
   const session = await createSession(db, user.userId);
   await setSessionCookie(session.token, session.expiresAt);
   redirect(safeNextPath(str(form, "next")));
@@ -163,18 +156,20 @@ export async function setFirstOwnerPassword(
   const problem = passwordProblem(password, email);
   if (problem) return { ok: false, error: problem };
 
-  const owner = await findActiveOwner(db, email);
-  if (!owner) {
+  const result = await setFirstOwnerPasswordOnce(db, email, await hashPassword(password));
+  if (!result.ok) {
     return {
       ok: false,
-      error: "Dit e-mailadres is geen eigenaar van een organisatie in Yuzu.",
+      error:
+        result.reason === "taken"
+          ? "Er is al een wachtwoord ingesteld. Log gewoon in."
+          : "Dit e-mailadres is geen eigenaar van een organisatie in Yuzu.",
     };
   }
-  await setPasswordHash(db, owner.userId, await hashPassword(password));
-  await auditForUser(db, owner.userId, "password_set", owner.userId, {
+  await auditForUser(db, result.userId, "password_set", result.userId, {
     via: "first_owner",
   });
-  const session = await createSession(db, owner.userId);
+  const session = await createSession(db, result.userId);
   await setSessionCookie(session.token, session.expiresAt);
   redirect("/inbox/open");
 }
@@ -224,10 +219,20 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   const db = await getDb();
   const current = str(form, "current");
   const next = str(form, "password");
+  if (current.length > MAX_PASSWORD_LENGTH) {
+    return { ok: false, error: "Je huidige wachtwoord klopt niet." };
+  }
+  // Ook hier remmen op raden (bijv. met een gestolen sessie).
+  const attempt = await beginLoginAttempt(db, {
+    emailHash: emailHash(session.email),
+    ipHash: await clientIpHash(),
+  });
+  if (attempt.blocked) return { ok: false, error: TOO_MANY };
   const stored = await getPasswordHash(db, session.userId);
   if (!stored || !(await verifyPassword(current, stored))) {
     return { ok: false, error: "Je huidige wachtwoord klopt niet." };
   }
+  await markLoginSuccess(db, attempt.attemptId);
   if (next !== str(form, "password2")) {
     return { ok: false, error: "De twee nieuwe wachtwoorden zijn niet gelijk." };
   }
@@ -268,6 +273,7 @@ export async function createPasswordLink(userId: string): Promise<LinkResult> {
       const [member] = await tx
         .select({
           userId: s.memberships.userId,
+          role: s.memberships.role,
           active: s.memberships.active,
           passwordSetAt: s.users.passwordSetAt,
         })
@@ -283,8 +289,19 @@ export async function createPasswordLink(userId: string): Promise<LinkResult> {
         error: "Deze gebruiker is uitgeschakeld. Zet hem eerst weer aan.",
       };
     }
-    const purpose = member.passwordSetAt ? "reset" : "invite";
     const db = await getDb();
+    const problem = passwordLinkProblem({
+      actorRole: session.role,
+      targetRole: member.role,
+      targetHasPassword: member.passwordSetAt !== null,
+      targetInOtherOrganization: await hasOtherMemberships(
+        db,
+        member.userId,
+        session.organizationId,
+      ),
+    });
+    if (problem) return { ok: false, error: problem };
+    const purpose = member.passwordSetAt ? "reset" : "invite";
     const { token, expiresAt } = await createAuthToken(db, {
       userId: member.userId,
       purpose,

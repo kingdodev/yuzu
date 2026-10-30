@@ -36,7 +36,7 @@ export async function TicketList({ view }: { view: InboxView }) {
                 <div className="absolute left-4 top-3.5 z-10 flex">
                   <TicketCheckbox id={t.id} label={t.subject} />
                 </div>
-                <TicketRowLink href={`/inbox/${view}/${t.id}`} indent>
+                <TicketRowLink href={`/inbox/${view}/${t.id}`} indent={options.canWork}>
                   <TicketRowBody t={t} />
                 </TicketRowLink>
               </li>

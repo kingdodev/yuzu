@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { NewTicketForm } from "@/components/inbox/new-ticket-form";
 import { PageHeader, Skeleton } from "@/components/ui";
+import { canWorkTickets } from "@/domain/permissions";
 import { listSendingShops } from "@/server/inbox";
+import { getSession } from "@/server/session";
 
 export const metadata = { title: "Nieuwe e-mail" };
 
@@ -26,13 +28,20 @@ async function Form({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getSession();
+  if (!canWorkTickets(session.role)) {
+    return (
+      <p className="text-muted">
+        Als meelezer kun je geen mails sturen. Vraag een beheerder als je dat wel nodig
+        hebt.
+      </p>
+    );
+  }
   const [params, shops] = await Promise.all([searchParams, listSendingShops()]);
   const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
   if (shops.length === 0) {
     return (
-      <p className="text-muted">
-        Er is nog geen actieve shop. Voeg er een toe onder Beheer.
-      </p>
+      <p className="text-muted">Er is geen actieve shop waar jij vanaf kunt mailen.</p>
     );
   }
   return (

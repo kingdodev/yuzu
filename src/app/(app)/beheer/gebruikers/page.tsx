@@ -4,7 +4,9 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { ActionForm, Field } from "@/components/forms";
 import { DemoNotice, PageHeader, Panel, Skeleton } from "@/components/ui";
 import { usesDemoSession } from "@/db/connection";
+import { isOwner } from "@/domain/permissions";
 import { inviteMember } from "@/server/actions/admin";
+import { getSession } from "@/server/session";
 import { listMembers, listShops } from "@/server/admin";
 
 export const metadata = { title: "Gebruikers en rollen" };
@@ -61,7 +63,11 @@ export default function UsersPage() {
 }
 
 async function Members() {
-  const [members, shops] = await Promise.all([listMembers(), listShops()]);
+  const [members, shops, session] = await Promise.all([
+    listMembers(),
+    listShops(),
+    getSession(),
+  ]);
   return (
     <Panel className="divide-y divide-line">
       {members.map((m) => (
@@ -70,6 +76,7 @@ async function Members() {
           member={m}
           shops={shops.map((s) => ({ id: s.id, code: s.code, name: s.name }))}
           showLogin={!usesDemoSession()}
+          viewerIsOwner={isOwner(session.role)}
         />
       ))}
     </Panel>

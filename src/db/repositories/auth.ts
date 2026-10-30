@@ -7,11 +7,12 @@
  * drizzle/0006_inloggen_afschermen.sql). Gebruik deze functies alleen vanuit
  * src/server/auth en de inlogacties.
  */
-import { and, asc, count, eq, gt, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import {
   INVITE_DAYS,
   LOGIN_WINDOW_MINUTES,
   MAX_FAILURES_PER_EMAIL,
+  MAX_FAILURES_PER_EMAIL_AND_IP,
   MAX_FAILURES_PER_IP,
   RESET_HOURS,
   SESSION_DAYS,
@@ -55,50 +56,70 @@ export async function findLoginUser(db: Db, email: string) {
 
 // --- Remmen op raden ------------------------------------------------------
 
-export async function isLoginBlocked(
+/**
+ * Begin een inlogpoging. In één transactie, met een slot per e-mailadres:
+ * tel de mislukte pogingen en leg deze poging alvast vast als mislukt,
+ * vóórdat het wachtwoord gecontroleerd wordt. Zo tellen ook gelijktijdige
+ * pogingen mee. Bij succes zet markLoginSuccess hem op geslaagd.
+ */
+export async function beginLoginAttempt(
   db: Db,
   key: { emailHash: string; ipHash: string | null },
   now = new Date(),
-) {
+): Promise<{ blocked: true } | { blocked: false; attemptId: string }> {
   const since = new Date(now.getTime() - LOGIN_WINDOW_MINUTES * 60 * 1000);
   return withPrivileged(db, async (tx) => {
-    const [byEmail] = await tx
-      .select({ n: count() })
-      .from(loginAttempts)
-      .where(
-        and(
-          eq(loginAttempts.emailHash, key.emailHash),
-          eq(loginAttempts.success, false),
-          gt(loginAttempts.createdAt, since),
-        ),
-      );
-    if (byEmail.n >= MAX_FAILURES_PER_EMAIL) return true;
-    if (!key.ipHash) return false;
-    const [byIp] = await tx
-      .select({ n: count() })
-      .from(loginAttempts)
-      .where(
-        and(
-          eq(loginAttempts.ipHash, key.ipHash),
-          eq(loginAttempts.success, false),
-          gt(loginAttempts.createdAt, since),
-        ),
-      );
-    return byIp.n >= MAX_FAILURES_PER_IP;
-  });
-}
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key.emailHash}))`);
+    const failures = (where: SQL) =>
+      tx
+        .select({ n: count() })
+        .from(loginAttempts)
+        .where(
+          and(
+            where,
+            eq(loginAttempts.success, false),
+            gt(loginAttempts.createdAt, since),
+          ),
+        )
+        .then(([r]) => r.n);
 
-export async function recordLoginAttempt(
-  db: Db,
-  attempt: { emailHash: string; ipHash: string | null; success: boolean },
-) {
-  await withPrivileged(db, async (tx) => {
-    await tx.insert(loginAttempts).values(attempt);
+    const byEmail = await failures(eq(loginAttempts.emailHash, key.emailHash));
+    const byEmailAndIp = key.ipHash
+      ? await failures(
+          and(
+            eq(loginAttempts.emailHash, key.emailHash),
+            eq(loginAttempts.ipHash, key.ipHash),
+          )!,
+        )
+      : byEmail;
+    const byIp = key.ipHash ? await failures(eq(loginAttempts.ipHash, key.ipHash)) : 0;
+    if (
+      byEmailAndIp >= MAX_FAILURES_PER_EMAIL_AND_IP ||
+      byEmail >= MAX_FAILURES_PER_EMAIL ||
+      byIp >= MAX_FAILURES_PER_IP
+    ) {
+      return { blocked: true } as const;
+    }
+
+    const [row] = await tx
+      .insert(loginAttempts)
+      .values({ ...key, success: false, createdAt: now })
+      .returning({ id: loginAttempts.id });
     // Oude pogingen hoeven we niet te bewaren.
     await tx
       .delete(loginAttempts)
-      .where(lt(loginAttempts.createdAt, new Date(Date.now() - DAY)));
+      .where(lt(loginAttempts.createdAt, new Date(now.getTime() - DAY)));
+    return { blocked: false, attemptId: row.id } as const;
   });
+}
+
+export async function markLoginSuccess(db: Db, attemptId: string) {
+  await withPrivileged(db, (tx) =>
+    tx
+      .update(loginAttempts)
+      .set({ success: true })
+      .where(eq(loginAttempts.id, attemptId)),
+  );
 }
 
 // --- Sessies ---------------------------------------------------------------
@@ -348,4 +369,56 @@ export async function expireAuthTokens(db: Db, userId: string, now = new Date())
         ),
       ),
   );
+}
+
+/** Is iemand ook lid van een andere organisatie dan deze? */
+export async function hasOtherMemberships(
+  db: Db,
+  userId: string,
+  organizationId: string,
+) {
+  const [row] = await withPrivileged(db, (tx) =>
+    tx
+      .select({ n: count() })
+      .from(memberships)
+      .where(
+        and(
+          eq(memberships.userId, userId),
+          ne(memberships.organizationId, organizationId),
+        ),
+      ),
+  );
+  return row.n > 0;
+}
+
+/**
+ * Het allereerste wachtwoord, in één transactie met een slot: alleen als nog
+ * niemand een wachtwoord heeft en het adres van een actieve eigenaar is.
+ */
+export async function setFirstOwnerPassword(db: Db, email: string, passwordHash: string) {
+  return withPrivileged(db, async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('yuzu:first-owner'))`);
+    const [{ n }] = await tx.select({ n: count() }).from(userCredentials);
+    if (n > 0) return { ok: false, reason: "taken" } as const;
+    const [owner] = await tx
+      .select({ userId: users.id })
+      .from(users)
+      .innerJoin(
+        memberships,
+        and(
+          eq(memberships.userId, users.id),
+          eq(memberships.role, "owner"),
+          eq(memberships.active, true),
+        ),
+      )
+      .where(eq(users.email, email))
+      .limit(1);
+    if (!owner) return { ok: false, reason: "not_owner" } as const;
+    await tx.insert(userCredentials).values({ userId: owner.userId, passwordHash });
+    await tx
+      .update(users)
+      .set({ passwordSetAt: sql`now()`, updatedAt: sql`now()` })
+      .where(eq(users.id, owner.userId));
+    return { ok: true, userId: owner.userId } as const;
+  });
 }

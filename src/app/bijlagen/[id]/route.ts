@@ -42,7 +42,8 @@ export async function GET(_: Request, ctx: RouteContext<"/bijlagen/[id]">) {
   // Afbeeldingen in een afgeschermde pagina; de pdf-viewer van de browser
   // werkt niet in een sandbox en draait zelf al afgeschermd.
   if (serving.isImage || !serving.inline) {
-    headers["content-security-policy"] = "default-src 'none'; img-src 'self'; sandbox";
+    headers["content-security-policy"] =
+      "default-src 'none'; img-src 'self'; sandbox; frame-ancestors 'none'";
   }
   return new Response(body as BodyInit, { headers });
 }

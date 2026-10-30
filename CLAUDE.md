@@ -18,7 +18,9 @@ Magento-webshops". Lees ook AGENTS.md (Next.js-specifieke regels).
 
 1. **Altijd via `withTenant(db, organizationId, fn)`** voor data van een
    organisatie. Daarbinnen draait alles als rol `yuzu_app` met Row Level
-   Security. `withPrivileged` alleen voor beheer over organisaties heen
+   Security. Verzoeken van gebruikers gaan via `asTenant`, dat ook
+   `app.user_id` zet: dan ziet iemand alleen tickets van zijn eigen shops
+   (`app_visible_shop`, migratie 0007). `withPrivileged` alleen voor beheer over organisaties heen
    (organisatie of gebruiker aanmaken, onderhoudsjobs) — nooit voor verzoeken
    van agents.
 2. **Nieuwe tabel met klant- of bedrijfsdata?** Geef hem een
@@ -36,6 +38,13 @@ Magento-webshops". Lees ook AGENTS.md (Next.js-specifieke regels).
    live shop en schrijf er niets naar zonder expliciete toestemming.
 7. **Geen echte sleutels of wachtwoorden** in code, tests of commits. Alleen
    via omgevingsvariabelen; `.env.example` documenteert welke.
+
+8. **Rechten per rol** staan in `src/domain/permissions.ts` en worden in
+   elke server action gecontroleerd (niet alleen in de interface). Meelezer:
+   lezen en notities; agent: zichzelf toewijzen; teamleider: anderen
+   toewijzen en rapportages; beheerder: beheer; eigenaar: ook koppelingen en
+   privacy. Verwijzingen uit formulieren (shop-, team-, label-ID's) eerst
+   controleren tegen de eigen organisatie.
 
 ## Conventies
 

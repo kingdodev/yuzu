@@ -39,5 +39,8 @@ function isLocal(url: string): boolean {
 export function usesDemoSession(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
+  // Nooit op de echte (productie)site, ook niet als DATABASE_URL per ongeluk
+  // ontbreekt: dan zou iedereen zonder inloggen eigenaar zijn.
+  if (env.VERCEL_ENV === "production") return false;
   return !env.DATABASE_URL;
 }

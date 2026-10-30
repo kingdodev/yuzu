@@ -50,6 +50,20 @@
       "when": 1793367014033,
       "tag": "0006_inloggen_afschermen",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793368337026,
+      "tag": "0007_toegang_per_shop",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793369217208,
+      "tag": "0008_gebruikers_afschermen",
+      "breakpoints": true
     }
   ]
 }

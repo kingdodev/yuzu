@@ -6,6 +6,7 @@ import {
   deletePendingAttachment,
 } from "@/db/repositories/attachments";
 import { checkUpload } from "@/domain/attachments";
+import { canWorkTickets, PermissionError, requirePermission } from "@/domain/permissions";
 import { getFileStore, type UploadTarget } from "@/integrations/storage";
 import { asTenant } from "../session";
 
@@ -38,18 +39,28 @@ export async function startAttachmentUpload(
   if (!check.ok) return check;
 
   try {
-    const row = await asTenant((t, session) =>
-      createPendingAttachment(t, {
+    const row = await asTenant((t, session) => {
+      requirePermission(
+        canWorkTickets(session.role),
+        "Als meelezer kun je geen bijlagen versturen.",
+      );
+      return createPendingAttachment(t, {
         filename: check.filename,
         contentType: check.contentType,
         sizeBytes: parsed.data.size,
         uploadedById: session.userId,
-      }),
-    );
+      });
+    });
     const upload = await store.createUpload(row.storageKey, check.contentType);
     return { ok: true, id: row.id, upload };
   } catch (e) {
-    console.error("Upload voorbereiden mislukt", e instanceof Error ? e.message : e);
+    if (e instanceof PermissionError) return { ok: false, error: e.message };
+    // Geen melding loggen: die kan de bestandsnaam bevatten.
+    console.error(
+      "Upload voorbereiden mislukt",
+      (e as { cause?: { code?: string } })?.cause?.code ??
+        (e instanceof Error ? e.name : "onbekend"),
+    );
     return { ok: false, error: "Upload voorbereiden mislukt. Probeer het opnieuw." };
   }
 }
