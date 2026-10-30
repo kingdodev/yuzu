@@ -52,6 +52,7 @@ Importeer de repository in Vercel en zet twee omgevingsvariabelen:
   Supabase onder **Connect** de **Transaction pooler** (poort 6543) en vul je
   databasewachtwoord in.
 
+De serverfuncties draaien in Frankfurt (`vercel.json`), naast de database.
 Bij elke deploy past Vercel eerst de databasemigraties toe (`vercel-build` in
 package.json). Staat `DEMO_PASSWORD` aan, dan laadt het ook de voorbeelddata,
 maar alleen de eerste keer. Wat je daarna doet, blijft bewaard.
