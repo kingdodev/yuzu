@@ -5,6 +5,7 @@
 import { eq } from "drizzle-orm";
 import type { TicketStatus } from "@/domain/tickets";
 import { allocateTicketNumber } from "../repositories/tickets";
+import { MORE_TICKETS } from "./demo-more";
 import * as s from "../schema";
 import { withPrivileged, withTenant, type TenantTx } from "../tenant";
 import type { Db } from "../types";
@@ -79,13 +80,13 @@ const SHOPS: {
   },
 ];
 
-type DemoTicket = {
+export type DemoTicket = {
   shop: ShopCode;
   contact: { email: string; name: string; language: Lang };
   subject: string;
   intent: string;
   status: TicketStatus;
-  priority?: "normal" | "high";
+  priority?: "low" | "normal" | "high" | "urgent";
   assigned?: boolean;
   orders?: string[];
   tags?: string[];
@@ -553,14 +554,18 @@ export const AI_INTENTS: {
   { intent: "other", label: "Overig", mode: "draft", threshold: 95 },
 ];
 
-export async function seedDemo(db: Db) {
+/** Geeft het aantal extra voorbeeldtickets terug dat is toegevoegd. */
+export async function seedDemo(db: Db): Promise<number> {
   const existing = await withPrivileged(db, (tx) =>
     tx
       .select({ id: s.organizations.id })
       .from(s.organizations)
       .where(eq(s.organizations.slug, DEMO_ORG_SLUG)),
   );
-  if (existing.length > 0) return;
+  if (existing.length > 0) {
+    // Bestaande demo: alleen de extra voorbeeldtickets aanvullen.
+    return seedMoreDemoTickets(db, existing[0].id);
+  }
 
   const org = await withPrivileged(db, async (tx) => {
     const [o] = await tx
@@ -691,14 +696,64 @@ export async function seedDemo(db: Db) {
       });
     }
   });
+  return seedMoreDemoTickets(db, org.id);
+}
+
+/**
+ * Voegt de extra voorbeeldtickets toe aan een bestaande demo-organisatie.
+ * Per ticket alleen als die klant er nog niet is, zodat dit bij elke deploy
+ * mag draaien. Ontbreekt een shop of label (hernoemd of gewist), dan wordt
+ * het ticket of label overgeslagen. Geeft het aantal nieuwe tickets terug.
+ */
+export async function seedMoreDemoTickets(
+  db: Db,
+  organizationId: string,
+): Promise<number> {
+  return withTenant(db, organizationId, async (t) => {
+    const { tx } = t;
+    const [shopRows, tagRows, contactRows, member] = await Promise.all([
+      tx
+        .select({ id: s.shops.id, code: s.shops.code, domain: s.shops.domain })
+        .from(s.shops),
+      tx.select({ id: s.tags.id, name: s.tags.name }).from(s.tags),
+      tx.select({ email: s.contacts.email }).from(s.contacts),
+      tx
+        .select({ userId: s.memberships.userId })
+        .from(s.memberships)
+        .where(eq(s.memberships.userId, DEMO_USER_ID)),
+    ]);
+    const shops = new Map(shopRows.map((r) => [r.code, r]));
+    const tagId = Object.fromEntries(tagRows.map((r) => [r.name, r.id]));
+    const known = new Set(contactRows.map((c) => c.email.toLowerCase()));
+    const userId = member.length > 0 ? DEMO_USER_ID : null;
+
+    const todo = MORE_TICKETS.filter(
+      (d) => shops.has(d.shop) && !known.has(d.contact.email.toLowerCase()),
+    ).sort((a, b) => b.thread[0].minutesAgo - a.thread[0].minutesAgo);
+    for (const d of todo) {
+      const shop = shops.get(d.shop)!;
+      await seedTicket(t, d, { shopId: shop.id, shopDomain: shop.domain, tagId, userId });
+    }
+    return todo.length;
+  });
 }
 
 async function seedTicket(
   t: TenantTx,
   d: DemoTicket,
-  ctx: { shopId: string; shopDomain: string; tagId: Record<string, string> },
+  ctx: {
+    shopId: string;
+    shopDomain: string;
+    tagId: Record<string, string>;
+    /** Wie de antwoorden en notities schreef; null = geen gebruiker bekend. */
+    userId?: string | null;
+  },
 ) {
   const { tx, organizationId } = t;
+  const userId = ctx.userId === undefined ? DEMO_USER_ID : ctx.userId;
+  // Zonder gebruiker: antwoorden en notities als "systeem", niemand toegewezen.
+  const by = (b: DemoTicket["thread"][number]["by"]) =>
+    b === "user" && !userId ? "system" : b;
   const [contact] = await tx
     .insert(s.contacts)
     .values({
@@ -726,7 +781,7 @@ async function seedTicket(
       priority: d.priority ?? "normal",
       language: d.contact.language,
       intent: d.intent,
-      assigneeId: d.assigned ? DEMO_USER_ID : null,
+      assigneeId: d.assigned ? userId : null,
       firstResponseAt: firstOutbound ? minutes(firstOutbound.minutesAgo) : null,
       solvedAt: d.status === "solved" ? minutes(last.minutesAgo - 30) : null,
       lastMessageAt: minutes(last.minutesAgo),
@@ -750,8 +805,8 @@ async function seedTicket(
       type: "status_changed",
       fromValue: "new",
       toValue: d.status,
-      actorType: d.assigned ? "user" : "ai",
-      actorUserId: d.assigned ? DEMO_USER_ID : null,
+      actorType: d.assigned && userId ? "user" : "ai",
+      actorUserId: d.assigned ? userId : null,
       createdAt: minutes(last.minutesAgo - 1),
     });
   }
@@ -761,8 +816,8 @@ async function seedTicket(
       organizationId,
       ticketId: ticket.id,
       direction: m.dir,
-      authorType: m.by,
-      authorUserId: m.by === "user" ? DEMO_USER_ID : null,
+      authorType: by(m.by),
+      authorUserId: by(m.by) === "user" ? userId : null,
       fromEmail: m.dir === "inbound" ? contact.email : null,
       toEmails: m.dir === "outbound" ? [contact.email] : [],
       subject: i === 0 ? d.subject : `Re: ${d.subject}`,
@@ -782,7 +837,7 @@ async function seedTicket(
       linkedBy: "system",
     });
   }
-  for (const tag of d.tags ?? []) {
+  for (const tag of (d.tags ?? []).filter((name) => ctx.tagId[name])) {
     await tx
       .insert(s.ticketTags)
       .values({ organizationId, ticketId: ticket.id, tagId: ctx.tagId[tag] });

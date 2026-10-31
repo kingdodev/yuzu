@@ -53,10 +53,11 @@ try {
   }
 
   if (process.env.DEMO_PASSWORD?.trim()) {
-    await seedDemo(db as unknown as Db);
+    const added = await seedDemo(db as unknown as Db);
+    if (added > 0) console.log(`${added} extra voorbeeldtickets toegevoegd.`);
     if (store) {
-      const added = await seedDemoAttachments(db as unknown as Db, store);
-      if (added > 0) console.log(`${added} voorbeeldbijlagen toegevoegd.`);
+      const files = await seedDemoAttachments(db as unknown as Db, store);
+      if (files > 0) console.log(`${files} voorbeeldbijlagen toegevoegd.`);
     }
     console.log("Voorbeeldgegevens aanwezig.");
   }
