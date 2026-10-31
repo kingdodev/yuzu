@@ -108,6 +108,15 @@ alle), anders Magento, anders de demo. Het ticketpaneel laadt orders apart
 wacht. Tests draaien tegen `tests/helpers/fake-magento.ts` en
 `tests/helpers/fake-shopify.ts`.
 
+## Filters en labels
+
+Mailfilters (`mail_filters`, Beheer → Filters) werken zoals in Gmail:
+voorwaarden in `src/domain/filters.ts`, toepassen in
+`src/db/repositories/filters.ts`. De mailverwerking moet na het aanmaken van
+een ticket uit een binnenkomende mail `applyFiltersToNewTicket` aanroepen
+(label erbij, eventueel archiveren). Labelweergaven in de inbox heten
+`label-<tag-id>` (`isLabelView`) en tonen alle statussen.
+
 ## Structuur
 
 - `src/app/(app)/inbox` — inbox en ticketscherm
