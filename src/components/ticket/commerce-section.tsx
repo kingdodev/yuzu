@@ -45,12 +45,14 @@ export async function CommerceSection({ ticketId }: { ticketId: string }) {
 
       {orders.length > 0 && (
         <section>
-          <h2 className="text-[13px] font-medium text-muted">Orders in deze shop</h2>
+          <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted">
+            Orders in deze shop
+          </h2>
           <ul className="mt-2 space-y-3">
             {orders.map((o) => (
               <li
                 key={o.number}
-                className={`rounded-lg border p-3 ${linked.has(o.number.replace(/^#/, "")) ? "border-line-strong bg-panel-sunk" : "border-line"}`}
+                className={`rounded-lg border p-3 ${linked.has(o.number.replace(/^#/, "")) ? "border-primary/40 bg-selected/50" : "border-line"}`}
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="tabular font-semibold">{o.number}</span>

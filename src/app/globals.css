@@ -3,97 +3,119 @@
 /*
  * Yuzu — ontwerptokens
  *
- * Kleurstelling naar het voorbeeld van de Shopify-beheeromgeving: een donkere
- * balk bovenin, een lichtgrijze zijbalk, witte kaarten op een grijze
- * achtergrond, donkere hoofdknoppen en blauwe links. Groen betekent alleen
- * "gelukt". Yuzu-geel is gereserveerd voor wat de AI voor je klaarzet.
+ * Naar het voorbeeld van moderne helpdesks als Freshdesk: een donkere
+ * iconenbalk links, een witte kopbalk, witte kaarten met dunne randen op een
+ * lichtgrijze achtergrond, blauwe hoofdknoppen en links. Groen betekent
+ * alleen "gelukt". Yuzu-geel is gereserveerd voor wat de AI voor je klaarzet.
  */
 
 :root {
-  --bg: #f1f1f1;
+  --bg: #f3f5f7;
   --panel: #ffffff;
-  --panel-sunk: #f7f7f7;
-  --nav: #ebebeb;
-  --topbar: #1a1a1a;
-  --topbar-ink: #e3e3e3;
-  --ink: #303030;
-  --ink-soft: #4a4a4a;
-  --muted: #616161;
-  --line: #e3e3e3;
-  --line-strong: #cccccc;
-  --input: #8a8a8a;
-  --primary: #303030;
-  --primary-hover: #1a1a1a;
+  --panel-sunk: #f7f9fb;
+  --nav: #ffffff;
+  --rail: #0f2b40;
+  --rail-ink: #9fb3c4;
+  --rail-hover: #1a3b54;
+  --rail-active: #24506f;
+  --topbar: #ffffff;
+  --topbar-ink: #1b2b3a;
+  --ink: #1b2b3a;
+  --ink-soft: #3d4d5d;
+  --muted: #687888;
+  --line: #e3e8ed;
+  --line-strong: #cdd5dd;
+  --input: #c3ccd5;
+  --primary: #2160d0;
+  --primary-hover: #1a50b3;
   --on-primary: #ffffff;
-  --selected: #fafafa;
-  --hover: #f1f1f1;
-  --link: #005bd3;
-  --focus: #005bd3;
-  --success: #0c5132;
-  --success-tint: #cdfee1;
-  --info-tint: #eaf4ff;
-  --info-line: #c5dbf7;
-  --chart: #005bd3;
-  --card-shadow: 0 1px 0 0 rgba(26, 26, 26, 0.07), 0 0 0 1px rgba(26, 26, 26, 0.06);
+  --selected: #e9f1fe;
+  --selected-ink: #1a50b3;
+  --hover: #f0f3f6;
+  --link: #2160d0;
+  --focus: #2160d0;
+  --success: #12704a;
+  --success-tint: #ddf4e8;
+  --info-tint: #eef4fd;
+  --info-line: #cfdffa;
+  --chart: #2160d0;
+  --card-shadow: 0 1px 2px rgba(16, 40, 64, 0.06);
+  --pop-shadow: 0 8px 24px rgba(16, 40, 64, 0.14), 0 0 0 1px rgba(16, 40, 64, 0.06);
   --yuzu: #e6d63b;
   --yuzu-soft: #fbf7d3;
   --yuzu-ink: #4a4410;
   /* Tekst óp yuzu-geel; in beide modi donker. */
   --on-yuzu: #3a350a;
-  --alert: #8e1f0b;
-  --alert-tint: #fee9e8;
-  --note: #fff1e3;
-  --note-line: #ffd6a4;
+  --alert: #c0281d;
+  --alert-tint: #fdeceb;
+  --note: #fff6e6;
+  --note-line: #f3d9a4;
+
+  --prio-low: #3aa56c;
+  --prio-normal: #4a8fe0;
+  --prio-high: #f0a12b;
+  --prio-urgent: #e0443a;
 
   --shop-nl: #b25500;
   --shop-nl-tint: #ffefdd;
-  --shop-be: #303030;
-  --shop-be-tint: #e3e3e3;
+  --shop-be: #3d4d5d;
+  --shop-be-tint: #e6ebf0;
   --shop-fr: #00527c;
   --shop-fr-tint: #e0f0ff;
-  --shop-es: #8e1f0b;
-  --shop-es-tint: #fee9e8;
+  --shop-es: #a3241a;
+  --shop-es-tint: #fdeceb;
 }
 
 /* Donker: gekozen in Yuzu, of het systeem staat op donker en er is niets gekozen. */
 :root[data-theme="dark"] {
-  --bg: #1a1a1a;
-  --panel: #262626;
-  --panel-sunk: #202020;
-  --nav: #202020;
-  --topbar: #0f0f0f;
-  --topbar-ink: #e3e3e3;
-  --ink: #ececec;
-  --ink-soft: #cfcfcf;
-  --muted: #a3a3a3;
-  --line: #383838;
-  --line-strong: #4a4a4a;
-  --input: #6b6b6b;
-  --primary: #f1f1f1;
-  --primary-hover: #ffffff;
-  --on-primary: #1a1a1a;
-  --selected: #303030;
-  --hover: #2c2c2c;
-  --link: #7fb5ff;
-  --focus: #7fb5ff;
+  --bg: #0e161e;
+  --panel: #16212b;
+  --panel-sunk: #121b24;
+  --nav: #131d26;
+  --rail: #09121a;
+  --rail-ink: #8597a8;
+  --rail-hover: #15232f;
+  --rail-active: #1d3347;
+  --topbar: #16212b;
+  --topbar-ink: #e5ecf2;
+  --ink: #e5ecf2;
+  --ink-soft: #c2cdd8;
+  --muted: #8b9aa9;
+  --line: #24313d;
+  --line-strong: #33424f;
+  --input: #3d4d5c;
+  --primary: #4a86ee;
+  --primary-hover: #6197f2;
+  --on-primary: #ffffff;
+  --selected: #1b2f46;
+  --selected-ink: #9cc2ff;
+  --hover: #1c2833;
+  --link: #7fb0ff;
+  --focus: #7fb0ff;
   --success: #7ee2a8;
   --success-tint: #12331f;
-  --info-tint: #1c2a3d;
-  --info-line: #2c4466;
-  --chart: #7fb5ff;
-  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --info-tint: #172a40;
+  --info-line: #26405e;
+  --chart: #7fb0ff;
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --pop-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
   --yuzu: #e6d63b;
   --yuzu-soft: #2c2a12;
   --yuzu-ink: #f1e88c;
-  --alert: #ffa294;
+  --alert: #ff9b8f;
   --alert-tint: #3a1f1c;
-  --note: #2d2616;
+  --note: #2b2416;
   --note-line: #4d4126;
+
+  --prio-low: #4cc082;
+  --prio-normal: #6aa6ef;
+  --prio-high: #f4b54f;
+  --prio-urgent: #f06a60;
 
   --shop-nl: #ffb36b;
   --shop-nl-tint: #3a2618;
-  --shop-be: #e3e3e3;
-  --shop-be-tint: #383838;
+  --shop-be: #d5dee6;
+  --shop-be-tint: #2a3743;
   --shop-fr: #8cc8ff;
   --shop-fr-tint: #1c2a3d;
   --shop-es: #ffa294;
@@ -102,43 +124,54 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1a1a1a;
-    --panel: #262626;
-    --panel-sunk: #202020;
-    --nav: #202020;
-    --topbar: #0f0f0f;
-    --topbar-ink: #e3e3e3;
-    --ink: #ececec;
-    --ink-soft: #cfcfcf;
-    --muted: #a3a3a3;
-    --line: #383838;
-    --line-strong: #4a4a4a;
-    --input: #6b6b6b;
-    --primary: #f1f1f1;
-    --primary-hover: #ffffff;
-    --on-primary: #1a1a1a;
-    --selected: #303030;
-    --hover: #2c2c2c;
-    --link: #7fb5ff;
-    --focus: #7fb5ff;
+    --bg: #0e161e;
+    --panel: #16212b;
+    --panel-sunk: #121b24;
+    --nav: #131d26;
+    --rail: #09121a;
+    --rail-ink: #8597a8;
+    --rail-hover: #15232f;
+    --rail-active: #1d3347;
+    --topbar: #16212b;
+    --topbar-ink: #e5ecf2;
+    --ink: #e5ecf2;
+    --ink-soft: #c2cdd8;
+    --muted: #8b9aa9;
+    --line: #24313d;
+    --line-strong: #33424f;
+    --input: #3d4d5c;
+    --primary: #4a86ee;
+    --primary-hover: #6197f2;
+    --on-primary: #ffffff;
+    --selected: #1b2f46;
+    --selected-ink: #9cc2ff;
+    --hover: #1c2833;
+    --link: #7fb0ff;
+    --focus: #7fb0ff;
     --success: #7ee2a8;
     --success-tint: #12331f;
-    --info-tint: #1c2a3d;
-    --info-line: #2c4466;
-    --chart: #7fb5ff;
-    --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --info-tint: #172a40;
+    --info-line: #26405e;
+    --chart: #7fb0ff;
+    --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+    --pop-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
     --yuzu: #e6d63b;
     --yuzu-soft: #2c2a12;
     --yuzu-ink: #f1e88c;
-    --alert: #ffa294;
+    --alert: #ff9b8f;
     --alert-tint: #3a1f1c;
-    --note: #2d2616;
+    --note: #2b2416;
     --note-line: #4d4126;
+
+    --prio-low: #4cc082;
+    --prio-normal: #6aa6ef;
+    --prio-high: #f4b54f;
+    --prio-urgent: #f06a60;
 
     --shop-nl: #ffb36b;
     --shop-nl-tint: #3a2618;
-    --shop-be: #e3e3e3;
-    --shop-be-tint: #383838;
+    --shop-be: #d5dee6;
+    --shop-be-tint: #2a3743;
     --shop-fr: #8cc8ff;
     --shop-fr-tint: #1c2a3d;
     --shop-es: #ffa294;
@@ -153,6 +186,15 @@
   --color-nav: var(--nav);
   --color-topbar: var(--topbar);
   --color-topbar-ink: var(--topbar-ink);
+  --color-rail: var(--rail);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-active: var(--rail-active);
+  --color-selected-ink: var(--selected-ink);
+  --color-prio-low: var(--prio-low);
+  --color-prio-normal: var(--prio-normal);
+  --color-prio-high: var(--prio-high);
+  --color-prio-urgent: var(--prio-urgent);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-muted: var(--muted);
@@ -163,6 +205,7 @@
   --color-selected: var(--selected);
   --color-hover: var(--hover);
   --color-link: var(--link);
+  --color-focus: var(--focus);
   --color-success: var(--success);
   --color-success-tint: var(--success-tint);
   --color-info-tint: var(--info-tint);
@@ -177,11 +220,12 @@
   --color-note: var(--note);
   --color-note-line: var(--note-line);
   --shadow-card: var(--card-shadow);
-  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --shadow-pop: var(--pop-shadow);
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
-  font-size: 15px;
+  font-size: 14px;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -197,7 +241,8 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-feature-settings: "tnum" 0;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Getallen in tabellen en lijsten netjes onder elkaar. */
@@ -218,19 +263,37 @@ body {
     width: 100%;
     background: var(--panel);
     border: 1px solid var(--input);
-    border-radius: 8px;
-    padding: 0.42rem 0.65rem;
+    border-radius: 6px;
+    padding: 0.45rem 0.7rem;
     color: var(--ink);
     font: inherit;
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s;
   }
-  .field:hover {
-    background: var(--panel-sunk);
+  .field:hover:not(:disabled) {
+    border-color: var(--muted);
   }
   .field:focus {
     outline: none;
-    background: var(--panel);
     border-color: var(--focus);
-    box-shadow: 0 0 0 1px var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent);
+  }
+  .field:disabled {
+    background: var(--panel-sunk);
+    color: var(--muted);
+  }
+  select.field {
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23687888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.55rem center;
+    background-size: 16px;
+    cursor: pointer;
+  }
+  select.field:disabled {
+    cursor: not-allowed;
   }
   textarea.field {
     line-height: 1.55;
@@ -241,53 +304,39 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    border-radius: 8px;
-    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    padding: 0.45rem 0.85rem;
     font-weight: 600;
-    font-size: 0.93rem;
+    font-size: 0.95rem;
     line-height: 1.2;
-    border: 0;
+    border: 1px solid transparent;
     cursor: pointer;
     white-space: nowrap;
+    transition:
+      background-color 0.12s,
+      border-color 0.12s,
+      color 0.12s;
   }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  /* Donkere hoofdknop met de lichte rand en schaduw die Shopify gebruikt. */
   .btn-primary {
     background: var(--primary);
     color: var(--on-primary);
-    box-shadow:
-      0 -1px 0 0 #b5b5b5 inset,
-      0 0 0 1px rgba(0, 0, 0, 0.1) inset,
-      0 0.5px 0 1.5px #ffffff inset;
-    background-image: linear-gradient(
-      180deg,
-      rgba(48, 48, 48, 0) 63.53%,
-      rgba(255, 255, 255, 0.15) 100%
-    );
+    box-shadow: 0 1px 1px rgba(16, 40, 64, 0.12);
   }
   .btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-hover);
-  }
-  .btn-primary:active:not(:disabled) {
-    box-shadow: 0 2px 0 0 #000 inset;
+    background: var(--primary-hover);
   }
   .btn-secondary {
     background: var(--panel);
     color: var(--ink);
-    box-shadow:
-      0 -1px 0 0 #b5b5b5 inset,
-      0 0 0 1px rgba(0, 0, 0, 0.1) inset,
-      0 0.5px 0 1.5px #ffffff inset;
+    border-color: var(--line-strong);
+    box-shadow: 0 1px 1px rgba(16, 40, 64, 0.05);
   }
   .btn-secondary:hover:not(:disabled) {
-    background: var(--panel-sunk);
-  }
-  .btn-secondary:active:not(:disabled) {
     background: var(--hover);
-    box-shadow: 0 2px 1px 0 rgba(26, 26, 26, 0.2) inset;
   }
   .btn-quiet {
     background: transparent;
@@ -297,16 +346,13 @@ body {
     color: var(--ink);
     background: var(--hover);
   }
-}
 
-:root[data-theme="dark"] :is(.btn-primary, .btn-secondary) {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-  background-image: none;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) :is(.btn-primary, .btn-secondary) {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-    background-image: none;
+  /* Kaart: wit, dunne rand, nauwelijks schaduw. */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
   }
 }
 
@@ -319,12 +365,26 @@ body {
   }
 }
 
-/* Inbox op kleine schermen: lijst óf ticket. */
-@media (max-width: 1023px) {
-  .inbox:has([data-ticket]) .inbox-list {
-    display: none;
+/* Inbox: zie InboxColumns. Zonder ticket: weergaven + brede lijst. */
+.inbox-views {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .inbox:not(:has([data-ticket])) .inbox-views {
+    display: block;
   }
-  .inbox:not(:has([data-ticket])) .inbox-detail {
-    display: none;
+}
+.inbox:not(:has([data-ticket])) .inbox-detail {
+  display: none;
+}
+/* Met een ticket open: alleen op heel brede schermen een smalle lijst ernaast. */
+.inbox:has([data-ticket]) .inbox-list {
+  display: none;
+}
+@media (min-width: 1536px) {
+  .inbox:has([data-ticket]) .inbox-list {
+    display: block;
+    flex: 0 0 340px;
+    border-right: 1px solid var(--line);
   }
 }

@@ -115,8 +115,10 @@ wacht. Tests draaien tegen `tests/helpers/fake-magento.ts` en
 - `src/server/` — data ophalen (`inbox.ts`, `admin.ts`, `reports.ts`),
   sessie en rechten (`session.ts`), server actions (`actions/`)
 - `src/components/` — interface; ontwerptokens in `src/app/globals.css`
-  (kleurstelling naar het voorbeeld van de Shopify-beheeromgeving).
-  Yuzu-geel is alleen voor wat de AI klaarzet.
+  (opbouw naar het voorbeeld van Freshdesk: donkere iconenbalk links
+  (`rail.tsx`), witte kopbalk, ticketlijst als kaarten met prioriteit,
+  eigenaar en status rechts, ticketscherm met actiebalk en
+  eigenschappenpaneel). Yuzu-geel is alleen voor wat de AI klaarzet.
 
 Next.js 16 met Cache Components: alles wat data of de URL leest, staat binnen
 een `<Suspense>`. Gebruik geen `usePathname` buiten een Suspense-grens.

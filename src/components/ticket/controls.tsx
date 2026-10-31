@@ -171,7 +171,7 @@ export function TagPicker({
         </button>
       )}
       {open && !readOnly && (
-        <ul className="absolute left-0 top-full z-10 mt-1 w-52 rounded-lg border border-line bg-panel p-1 shadow-lg">
+        <ul className="absolute left-0 top-full z-10 mt-1 w-52 rounded-lg bg-panel p-1 shadow-pop">
           {allTags.map((t) => (
             <li key={t.id}>
               <button

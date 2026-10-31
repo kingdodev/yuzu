@@ -31,8 +31,8 @@ export function ShopBadge({ code, size = "sm" }: { code: string; size?: "sm" | "
 }
 
 const STATUS_DOT: Record<TicketStatus, string> = {
-  new: "var(--yuzu)",
-  open: "var(--link)",
+  new: "var(--primary)",
+  open: "var(--prio-high)",
   pending_customer: "var(--line-strong)",
   pending_third_party: "var(--line-strong)",
   solved: "transparent",
@@ -48,11 +48,7 @@ export function StatusPill({ status }: { status: TicketStatus }) {
         className="h-2 w-2 rounded-full"
         style={{
           background: STATUS_DOT[status],
-          boxShadow: hollow
-            ? "inset 0 0 0 1.5px var(--muted)"
-            : status === "new"
-              ? "0 0 0 1px var(--yuzu-ink)"
-              : undefined,
+          boxShadow: hollow ? "inset 0 0 0 1.5px var(--muted)" : undefined,
         }}
       />
       {TICKET_STATUS_LABELS[status]}
@@ -132,7 +128,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="max-w-2xl">
-        <h1 className="text-[1.6rem] font-semibold leading-tight tracking-[-0.01em]">
+        <h1 className="text-[1.5rem] font-semibold leading-tight tracking-[-0.015em]">
           {title}
         </h1>
         {description && (
@@ -151,10 +147,85 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
+  return <section className={`card ${className}`}>{children}</section>;
+}
+
+const AVATAR_COLORS = [
+  ["#e8f0fe", "#1a50b3"],
+  ["#e6f6ee", "#14704a"],
+  ["#fdf0e2", "#a3540f"],
+  ["#f3eafd", "#6b3fb0"],
+  ["#fdeaea", "#b02a2a"],
+  ["#e5f5f8", "#0f6b7d"],
+  ["#fbeef6", "#a3306e"],
+] as const;
+
+function initialsOf(name: string): string {
+  const words = name
+    .replace(/@.*/, "")
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  const letters =
+    words.length >= 2
+      ? words[0][0] + words[words.length - 1][0]
+      : (words[0] ?? "?").slice(0, 2);
+  return letters.toUpperCase();
+}
+
+/** Rondje met initialen, met een vaste kleur per naam. */
+export function Avatar({
+  name,
+  size = 32,
+  tone,
+}: {
+  name: string;
+  size?: number;
+  /** "ai" voor Yuzu zelf, "team" voor collega's. */
+  tone?: "ai" | "team";
+}) {
+  let hash = 0;
+  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const [bg, fg] =
+    tone === "ai"
+      ? ["var(--yuzu)", "var(--on-yuzu)"]
+      : tone === "team"
+        ? ["var(--rail)", "#ffffff"]
+        : AVATAR_COLORS[hash % AVATAR_COLORS.length];
   return (
-    <section className={`rounded-xl bg-panel shadow-card ${className}`}>
-      {children}
-    </section>
+    <span
+      aria-hidden
+      className="inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold"
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.38),
+        background: bg,
+        color: fg,
+      }}
+    >
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+export const PRIORITY_LABELS: Record<string, string> = {
+  low: "Laag",
+  normal: "Normaal",
+  high: "Hoog",
+  urgent: "Spoed",
+};
+
+/** Prioriteit met een gekleurd blokje, zoals in moderne helpdesks. */
+export function PriorityTag({ priority }: { priority: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-soft">
+      <span
+        aria-hidden
+        className="h-2.5 w-2.5 rounded-[3px]"
+        style={{ background: `var(--prio-${priority}, var(--prio-normal))` }}
+      />
+      {PRIORITY_LABELS[priority] ?? priority}
+    </span>
   );
 }
 

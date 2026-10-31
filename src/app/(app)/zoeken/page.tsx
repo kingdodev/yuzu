@@ -46,17 +46,17 @@ async function Results({
       />
       {found?.orders && <OrderNote orders={found.orders} count={found.results.length} />}
       {/* Op een telefoon staat het zoekveld niet in de bovenbalk. */}
-      <div className="mb-5 rounded-lg bg-topbar p-2 sm:hidden">
+      <div className="mb-5 sm:hidden">
         <SearchField key={raw} defaultValue={raw} />
       </div>
       {found && found.results.length > 0 && (
-        <Panel className="overflow-hidden">
+        <Panel className="@container overflow-hidden">
           <ul>
             {found.results.map((t) => (
               <li key={t.id} className="border-b border-line last:border-b-0">
                 <Link
                   href={`/inbox/${viewForStatus(t.status)}/${t.id}`}
-                  className="block px-4 py-3 hover:bg-panel-sunk"
+                  className="block px-4 py-3 hover:bg-hover"
                 >
                   <TicketRowBody t={{ ...t, preview: t.snippet }} showNumber />
                 </Link>

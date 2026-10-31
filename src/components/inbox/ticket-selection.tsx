@@ -92,12 +92,13 @@ export function TicketSelection({
     });
   }
 
-  const selectClass = "field w-auto min-w-0 flex-1 py-1.5 text-[13.5px]";
+  const selectClass =
+    "field w-auto min-w-0 flex-1 py-1.5 text-[13.5px] @2xl:w-44 @2xl:flex-none";
 
   return (
     <SelectionContext.Provider value={enabled ? { selected, toggle } : null}>
       <div className="flex h-full flex-col">
-        <div className="border-b border-line px-4 pb-3 pt-4">
+        <div className="border-b border-line bg-panel px-4 py-3">
           <div className="flex items-center gap-3">
             {enabled && ids.length > 0 && (
               <input
@@ -118,7 +119,7 @@ export function TicketSelection({
             <div
               role="toolbar"
               aria-label="Acties voor geselecteerde tickets"
-              className="mt-3 space-y-2"
+              className="mt-3 space-y-2 @2xl:flex @2xl:flex-wrap @2xl:items-center @2xl:gap-2 @2xl:space-y-0"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[13.5px] font-medium">
@@ -146,7 +147,7 @@ export function TicketSelection({
                   Wissen
                 </button>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 @2xl:order-1">
                 <select
                   className={selectClass}
                   value=""

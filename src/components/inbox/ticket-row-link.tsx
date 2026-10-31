@@ -19,8 +19,10 @@ export function TicketRowLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`block border-b border-line py-3 pr-4 transition-colors ${indent ? "pl-11" : "pl-4"} ${
-        active ? "bg-hover" : "hover:bg-panel-sunk"
+      className={`relative block border-b border-line py-3 pr-4 transition-colors ${indent ? "pl-11" : "pl-4"} ${
+        active
+          ? "bg-selected before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-primary"
+          : "hover:bg-hover"
       }`}
     >
       {children}

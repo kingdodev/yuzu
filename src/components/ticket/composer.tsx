@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, Sparkles } from "lucide-react";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usesOrderVars } from "@/domain/orders";
 import {
   addNote,
@@ -10,6 +10,7 @@ import {
   sendReply,
 } from "@/server/actions/tickets";
 import { AttachmentPicker, type PickerState } from "../attachments/attachment-picker";
+import { COMPOSE_EVENT, type ComposeMode } from "./compose-buttons";
 
 type Draft = {
   id: string;
@@ -54,6 +55,18 @@ export function Composer(props: Props) {
   const [pickerKey, setPickerKey] = useState(0);
   const [pending, start] = useTransition();
   const area = useRef<HTMLTextAreaElement>(null);
+
+  // "Antwoorden" / "Notitie" in de actiebalk bovenaan.
+  useEffect(() => {
+    function onCompose(e: Event) {
+      const wanted = (e as CustomEvent<ComposeMode>).detail;
+      setMode(notesOnly || closed ? "note" : wanted);
+      area.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      area.current?.focus({ preventScroll: true });
+    }
+    window.addEventListener(COMPOSE_EVENT, onCompose);
+    return () => window.removeEventListener(COMPOSE_EVENT, onCompose);
+  }, [notesOnly, closed]);
 
   function applyDraft() {
     if (!draft) return;
@@ -121,7 +134,7 @@ export function Composer(props: Props) {
       {draft && !usedDraftId && !notesOnly && (
         <section
           aria-label="Concept van Yuzu"
-          className="overflow-hidden rounded-xl border border-yuzu bg-yuzu-soft"
+          className="overflow-hidden rounded-lg border border-yuzu bg-yuzu-soft shadow-card"
         >
           <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-yuzu/60 px-4 py-2.5">
             <span className="inline-flex items-center gap-1.5 font-semibold text-yuzu-ink">
@@ -194,8 +207,8 @@ export function Composer(props: Props) {
         </section>
       )}
 
-      <section className="rounded-xl border border-line bg-panel">
-        <div role="tablist" className="flex gap-1 border-b border-line px-2 pt-2">
+      <section className="card overflow-hidden">
+        <div role="tablist" className="flex gap-1 border-b border-line px-3 pt-1.5">
           {(
             [
               ["reply", "Antwoord aan klant"],
@@ -211,9 +224,9 @@ export function Composer(props: Props) {
                 aria-selected={mode === value}
                 disabled={value === "reply" && (closed || notesOnly)}
                 onClick={() => setMode(value)}
-                className={`-mb-px rounded-t-md border-b-2 px-3 py-2 text-[14px] ${
+                className={`-mb-px border-b-2 px-3 py-2.5 text-[14px] ${
                   mode === value
-                    ? "border-ink font-semibold text-ink"
+                    ? "border-primary font-semibold text-ink"
                     : "border-transparent text-muted hover:text-ink"
                 }`}
               >

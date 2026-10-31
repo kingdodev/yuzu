@@ -1,4 +1,4 @@
-import "@fontsource-variable/instrument-sans";
+import "@fontsource-variable/inter";
 import type { Metadata } from "next";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";

@@ -18,7 +18,7 @@ export function AuthShell({
           <YuzuMark size={30} />
           <span className="text-[20px] font-semibold tracking-[-0.01em]">Yuzu</span>
         </div>
-        <section className="rounded-xl bg-panel p-6 shadow-card">
+        <section className="card p-6">
           <h1 className="text-[1.3rem] font-semibold tracking-[-0.01em]">{title}</h1>
           {description && (
             <p className="mt-1.5 text-[14px] leading-relaxed text-muted">{description}</p>

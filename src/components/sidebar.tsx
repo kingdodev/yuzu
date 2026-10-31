@@ -3,75 +3,45 @@ import {
   CheckCheck,
   Clock,
   Inbox,
+  Search,
   Settings,
-  SquarePen,
   User,
   UserX,
 } from "lucide-react";
-import Link from "next/link";
 import { Suspense } from "react";
-import { canSeeReports, canWorkTickets } from "@/domain/permissions";
+import { canSeeReports } from "@/domain/permissions";
 import { SHOP_VIEWS, VIEW_LABELS, type InboxView } from "@/domain/views";
 import { getViewCounts, getVisibleShopCodes } from "@/server/inbox";
 import { canManage, getSession } from "@/server/session";
 import { NavLink } from "./nav-link";
+import { ThemeSwitch } from "./theme-switch";
 import { ShopBadge, Skeleton } from "./ui";
 
-const ICON = { className: "h-[17px] w-[17px] shrink-0 text-muted", strokeWidth: 1.8 };
+const ICON = { className: "h-[17px] w-[17px] shrink-0 opacity-75", strokeWidth: 1.8 };
 
-export function Sidebar() {
+/** Weergaven en shops: het paneel naast de ticketlijst. */
+export function ViewsNav() {
   return (
     <nav
-      aria-label="Hoofdmenu"
-      className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-3"
+      aria-label="Weergaven"
+      className="flex h-full flex-col overflow-y-auto px-3 py-4"
     >
+      <div className="px-2.5 pb-3 text-[15px] font-semibold tracking-[-0.01em]">
+        Tickets
+      </div>
       <Suspense fallback={<Skeleton lines={9} />}>
-        <SidebarWithData />
+        <ViewLinks />
       </Suspense>
     </nav>
   );
 }
 
-async function SidebarWithData() {
-  const [counts, session, shopCodes] = await Promise.all([
-    getViewCounts(),
-    getSession(),
-    getVisibleShopCodes(),
-  ]);
-  return (
-    <SidebarLinks
-      counts={counts}
-      admin={canManage(session.role)}
-      reports={canSeeReports(session.role)}
-      canEmail={canWorkTickets(session.role)}
-      shopCodes={shopCodes}
-    />
-  );
-}
-
-function SidebarLinks({
-  counts,
-  admin,
-  reports,
-  canEmail,
-  shopCodes,
-}: {
-  counts: Record<InboxView, number>;
-  admin: boolean;
-  reports: boolean;
-  canEmail: boolean;
-  shopCodes: string[];
-}) {
+async function ViewLinks() {
+  const [counts, shopCodes] = await Promise.all([getViewCounts(), getVisibleShopCodes()]);
   const c = (v: InboxView) => counts[v];
   const shops = SHOP_VIEWS.filter((code) => shopCodes.includes(code));
   return (
-    <>
-      {canEmail && (
-        <Link href="/inbox/nieuw" className="btn btn-primary w-full justify-center">
-          <SquarePen className="h-4 w-4" aria-hidden />
-          Nieuwe e-mail
-        </Link>
-      )}
+    <div className="space-y-5">
       <div className="space-y-0.5">
         <NavLink href="/inbox/open" count={c("open")} emphasize>
           <Inbox {...ICON} />
@@ -94,10 +64,11 @@ function SidebarLinks({
           {VIEW_LABELS.solved}
         </NavLink>
       </div>
-
       {shops.length > 0 && (
         <div className="space-y-0.5">
-          <h2 className="px-2.5 pb-1 text-[12.5px] font-medium text-muted">Shops</h2>
+          <h2 className="px-2.5 pb-1 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted">
+            Shops
+          </h2>
           {shops.map((code) => (
             <NavLink key={code} href={`/inbox/${code}`} count={c(code)}>
               <ShopBadge code={code} />
@@ -106,21 +77,45 @@ function SidebarLinks({
           ))}
         </div>
       )}
+    </div>
+  );
+}
 
-      <div className="space-y-0.5">
-        {reports && (
-          <NavLink href="/rapportages">
-            <BarChart3 {...ICON} />
-            Rapportages
-          </NavLink>
-        )}
-        {admin && (
-          <NavLink href="/beheer/shops" match="/beheer">
-            <Settings {...ICON} />
-            Beheer
-          </NavLink>
-        )}
+/** Menu op een telefoon: weergaven plus de onderdelen uit de linkerbalk. */
+export function Sidebar() {
+  return (
+    <div className="space-y-4 pb-4">
+      <ViewsNav />
+      <Suspense fallback={null}>
+        <MoreLinks />
+      </Suspense>
+      <div className="px-5">
+        <ThemeSwitch alwaysVisible />
       </div>
-    </>
+    </div>
+  );
+}
+
+async function MoreLinks() {
+  const session = await getSession();
+  return (
+    <div className="space-y-0.5 border-t border-line px-3 pt-4">
+      <NavLink href="/zoeken">
+        <Search {...ICON} />
+        Zoeken
+      </NavLink>
+      {canSeeReports(session.role) && (
+        <NavLink href="/rapportages">
+          <BarChart3 {...ICON} />
+          Rapportages
+        </NavLink>
+      )}
+      {canManage(session.role) && (
+        <NavLink href="/beheer/shops" match="/beheer">
+          <Settings {...ICON} />
+          Beheer
+        </NavLink>
+      )}
+    </div>
   );
 }

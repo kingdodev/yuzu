@@ -39,14 +39,14 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-/** Drie knoppen in de bovenbalk: licht, donker of zoals de computer. */
-export function ThemeSwitch() {
+/** Drie knoppen in de kopbalk: licht, donker of zoals de computer. */
+export function ThemeSwitch({ alwaysVisible = false }: { alwaysVisible?: boolean }) {
   const theme = useSyncExternalStore(subscribe, readTheme, () => "system" as Theme);
   return (
     <div
       role="radiogroup"
       aria-label="Weergave"
-      className="flex items-center rounded-lg bg-white/10 p-0.5"
+      className={`items-center rounded-md border border-line bg-panel-sunk p-0.5 ${alwaysVisible ? "inline-flex" : "hidden sm:flex"}`}
     >
       {OPTIONS.map(({ value, label, Icon }) => {
         const active = theme === value;
@@ -59,10 +59,8 @@ export function ThemeSwitch() {
             aria-label={label}
             title={label}
             onClick={() => applyTheme(value)}
-            className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-              active
-                ? "bg-white/90 text-[#1a1a1a]"
-                : "text-white/70 hover:bg-white/10 hover:text-white"
+            className={`flex h-7 w-7 items-center justify-center rounded transition-colors ${
+              active ? "bg-panel text-ink shadow-card" : "text-muted hover:text-ink"
             }`}
           >
             <Icon className="h-[15px] w-[15px]" strokeWidth={2} aria-hidden />

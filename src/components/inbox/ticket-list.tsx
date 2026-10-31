@@ -14,12 +14,12 @@ export async function TicketList({ view }: { view: InboxView }) {
       archivableIds={archivableIds}
       options={options}
       header={
-        <header className="flex items-baseline justify-between">
-          <h1 className="text-lg font-semibold tracking-[-0.01em]">
+        <header className="flex items-baseline gap-2.5">
+          <h1 className="text-[17px] font-semibold tracking-[-0.01em]">
             {VIEW_LABELS[view]}
           </h1>
-          <span className="tabular text-sm text-muted">
-            {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
+          <span className="tabular rounded-full bg-hover px-2 py-[1px] text-[12.5px] font-medium text-muted">
+            {tickets.length}
           </span>
         </header>
       }
@@ -33,7 +33,7 @@ export async function TicketList({ view }: { view: InboxView }) {
           {tickets.map((t) => {
             return (
               <li key={t.id} className="relative">
-                <div className="absolute left-4 top-3.5 z-10 flex">
+                <div className="absolute left-4 top-[22px] z-10 flex">
                   <TicketCheckbox id={t.id} label={t.subject} />
                 </div>
                 <TicketRowLink href={`/inbox/${view}/${t.id}`} indent={options.canWork}>

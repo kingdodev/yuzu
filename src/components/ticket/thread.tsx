@@ -2,6 +2,7 @@ import { Sparkles, StickyNote } from "lucide-react";
 import { contactLabel, formatDateTime, LANGUAGE_LABELS, timeAgo } from "@/lib/format";
 import type { TicketDetail } from "@/server/inbox";
 import { AttachmentList, type AttachmentItem } from "../attachments/attachment-list";
+import { Avatar } from "../ui";
 import { Body, TranslatedText } from "./translated-text";
 
 export function Thread({ detail }: { detail: TicketDetail }) {
@@ -29,59 +30,66 @@ export function Thread({ detail }: { detail: TicketDetail }) {
         if (m.direction === "note") {
           const ai = m.authorType === "ai";
           return (
-            <li
-              key={m.id}
-              className="rounded-xl border border-dashed border-note-line bg-note px-4 py-3"
-            >
-              <div className="mb-1.5 flex items-center gap-2 text-[13.5px]">
-                {ai ? (
-                  <Sparkles className="h-3.5 w-3.5 text-yuzu-ink" aria-hidden />
-                ) : (
-                  <StickyNote className="h-3.5 w-3.5 text-muted" aria-hidden />
-                )}
-                <span className="font-semibold">
-                  {ai ? "Yuzu" : (authorName ?? "Collega")}
-                </span>
-                <span className="text-muted">
-                  {ai ? "heeft overgedragen" : "interne notitie"}
-                </span>
-                <span className="ml-auto">{when}</span>
+            <li key={m.id} className="flex gap-3">
+              <Avatar
+                name={ai ? "Yuzu" : (authorName ?? "Collega")}
+                tone={ai ? "ai" : "team"}
+                size={34}
+              />
+              <div className="min-w-0 flex-1 rounded-lg border border-note-line bg-note px-4 py-3">
+                <div className="mb-1.5 flex flex-wrap items-center gap-x-2 text-[13.5px]">
+                  <span className="font-semibold">
+                    {ai ? "Yuzu" : (authorName ?? "Collega")}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-muted">
+                    {ai ? (
+                      <Sparkles className="h-3.5 w-3.5 text-yuzu-ink" aria-hidden />
+                    ) : (
+                      <StickyNote className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                    {ai ? "heeft overgedragen" : "interne notitie"}
+                  </span>
+                  <span className="ml-auto">{when}</span>
+                </div>
+                <Body text={m.bodyText} />
+                <AttachmentList items={byMessage.get(m.id) ?? []} />
               </div>
-              <Body text={m.bodyText} />
-              <AttachmentList items={byMessage.get(m.id) ?? []} />
             </li>
           );
         }
 
         const inbound = m.direction === "inbound";
         const byAi = m.authorType === "ai";
+        const name = inbound
+          ? contactLabel(detail.contact.name, detail.contact.email)
+          : byAi
+            ? "Yuzu"
+            : (authorName ?? "Klantenservice");
         return (
-          <li
-            key={m.id}
-            className={`rounded-xl border px-4 py-3 ${inbound ? "border-line bg-panel" : "border-info-line bg-info-tint md:ml-10"}`}
-          >
-            <div className="mb-2 flex flex-wrap items-center gap-x-2 text-[13.5px]">
-              <span className="font-semibold">
-                {inbound
-                  ? contactLabel(detail.contact.name, detail.contact.email)
-                  : byAi
-                    ? "Yuzu"
-                    : (authorName ?? "Klantenservice")}
-              </span>
-              {!inbound && (
+          <li key={m.id} className="flex gap-3">
+            <Avatar
+              name={name}
+              tone={inbound ? undefined : byAi ? "ai" : "team"}
+              size={34}
+            />
+            <div
+              className={`min-w-0 flex-1 rounded-lg border px-4 py-3 shadow-card ${inbound ? "border-line bg-panel" : "border-info-line bg-info-tint"}`}
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-x-2 text-[13.5px]">
+                <span className="font-semibold">{name}</span>
                 <span className="inline-flex items-center gap-1 text-muted">
                   {byAi && <Sparkles className="h-3 w-3 text-yuzu-ink" aria-hidden />}
-                  {byAi ? "automatisch verstuurd" : "aan klant"}
+                  {inbound ? "via e-mail" : byAi ? "automatisch verstuurd" : "antwoordde"}
                 </span>
-              )}
-              <span className="ml-auto">{when}</span>
+                <span className="ml-auto">{when}</span>
+              </div>
+              <TranslatedText
+                original={m.bodyText}
+                translation={m.translatedText}
+                languageName={languageName}
+              />
+              <AttachmentList items={byMessage.get(m.id) ?? []} />
             </div>
-            <TranslatedText
-              original={m.bodyText}
-              translation={m.translatedText}
-              languageName={languageName}
-            />
-            <AttachmentList items={byMessage.get(m.id) ?? []} />
           </li>
         );
       })}

@@ -61,7 +61,7 @@ export function NewTicketForm({
 
   return (
     <form
-      className="space-y-5 rounded-xl bg-panel p-5 shadow-card"
+      className="card space-y-5 p-5"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
