@@ -642,6 +642,32 @@ export const integrations = pgTable(
   (t) => [primaryKey({ columns: [t.organizationId, t.kind] })],
 );
 
+/**
+ * Filters voor binnenkomende mail, zoals in Gmail: komt een mail overeen met
+ * alle ingevulde voorwaarden, dan krijgt het ticket een label en/of slaat het
+ * de inbox over (meteen gearchiveerd).
+ */
+export const mailFilters = pgTable(
+  "mail_filters",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    /** Afzender (adres of naam) bevat; meerdere met komma of OR = één ervan. */
+    fromContains: text("from_contains"),
+    subjectContains: text("subject_contains"),
+    /** Woorden die allemaal in onderwerp of tekst staan; "zinnen" tussen aanhalingstekens. */
+    hasWords: text("has_words"),
+    /** null = alle shops. */
+    shopId: uuid("shop_id").references(() => shops.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id").references(() => tags.id, { onDelete: "set null" }),
+    skipInbox: boolean("skip_inbox").notNull().default(false),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("mail_filters_org_idx").on(t.organizationId)],
+);
+
 /** Tabellen waarop Row Level Security per organisatie geldt. */
 export const TENANT_TABLES = [
   "shops",
@@ -664,4 +690,5 @@ export const TENANT_TABLES = [
   "ai_intent_settings",
   "ai_drafts",
   "integrations",
+  "mail_filters",
 ] as const;

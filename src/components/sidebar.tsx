@@ -11,7 +11,8 @@ import {
 import { Suspense } from "react";
 import { canSeeReports } from "@/domain/permissions";
 import { SHOP_VIEWS, VIEW_LABELS, type InboxView } from "@/domain/views";
-import { getViewCounts, getVisibleShopCodes } from "@/server/inbox";
+import { labelView } from "@/domain/views";
+import { getLabelCounts, getViewCounts, getVisibleShopCodes } from "@/server/inbox";
 import { canManage, getSession } from "@/server/session";
 import { NavLink } from "./nav-link";
 import { ThemeSwitch } from "./theme-switch";
@@ -37,7 +38,11 @@ export function ViewsNav() {
 }
 
 async function ViewLinks() {
-  const [counts, shopCodes] = await Promise.all([getViewCounts(), getVisibleShopCodes()]);
+  const [counts, shopCodes, labels] = await Promise.all([
+    getViewCounts(),
+    getVisibleShopCodes(),
+    getLabelCounts(),
+  ]);
   const c = (v: InboxView) => counts[v];
   const shops = SHOP_VIEWS.filter((code) => shopCodes.includes(code));
   return (
@@ -77,9 +82,34 @@ async function ViewLinks() {
           ))}
         </div>
       )}
+      {labels.length > 0 && (
+        <div className="space-y-0.5">
+          <h2 className="px-2.5 pb-1 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted">
+            Labels
+          </h2>
+          {labels.map((tag) => (
+            <NavLink key={tag.id} href={`/inbox/${labelView(tag.id)}`} count={tag.open}>
+              <span
+                aria-hidden
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ background: TAG_DOT[tag.color] ?? TAG_DOT.gray }}
+              />
+              <span className="truncate">{tag.name}</span>
+            </NavLink>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+const TAG_DOT: Record<string, string> = {
+  green: "#3aa56c",
+  blue: "#4a8fe0",
+  purple: "#8a63d2",
+  red: "#e0443a",
+  gray: "var(--muted)",
+};
 
 /** Menu op een telefoon: weergaven plus de onderdelen uit de linkerbalk. */
 export function Sidebar() {

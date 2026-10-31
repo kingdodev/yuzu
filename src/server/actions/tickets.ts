@@ -27,7 +27,7 @@ import {
   TICKET_STATUSES,
   type TicketStatus,
 } from "@/domain/tickets";
-import { isInboxView, viewForStatus } from "@/domain/views";
+import { isListView, viewForStatus } from "@/domain/views";
 import { orderTemplateVars } from "@/domain/orders";
 import { getTicketCommerce } from "@/server/inbox";
 import { getFileStore } from "@/integrations/storage";
@@ -310,7 +310,7 @@ export async function archiveTicket(
   view: string,
 ): Promise<ArchiveResult> {
   const id = uuid.parse(ticketId);
-  if (!isInboxView(view)) return { ok: false, error: "Onbekende weergave" };
+  if (!isListView(view)) return { ok: false, error: "Onbekende weergave" };
   try {
     const listIds = (await listTickets(view)).map((t) => t.id);
     const nextId = nextTicketAfter(listIds, id);

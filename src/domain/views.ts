@@ -59,3 +59,26 @@ export function viewForStatus(status: TicketStatus): InboxView {
       return "solved";
   }
 }
+
+/** Weergave van één label, zoals in Gmail: "label-<id>". Toont alle statussen. */
+export type LabelView = `label-${string}`;
+export type ListView = InboxView | LabelView;
+
+const LABEL_VIEW =
+  /^label-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+export function isLabelView(value: string): value is LabelView {
+  return LABEL_VIEW.test(value);
+}
+
+export function isListView(value: string): value is ListView {
+  return isInboxView(value) || isLabelView(value);
+}
+
+export function labelIdOf(view: LabelView): string {
+  return view.slice("label-".length);
+}
+
+export function labelView(tagId: string): LabelView {
+  return `label-${tagId}`;
+}

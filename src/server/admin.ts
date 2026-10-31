@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import * as s from "@/db/schema";
+import { listFilters } from "@/db/repositories/filters";
 import { getIntegration, listShopsForMapping } from "@/db/repositories/integrations";
 import type { StoreView } from "@/integrations/magento/mapping";
 import { shopifyShopCodes } from "@/integrations/shopify/index";
@@ -371,5 +372,22 @@ export function getShopifyAdmin() {
       })),
       encryptionReady: isEncryptionConfigured(),
     };
+  });
+}
+
+export function listFiltersAdmin() {
+  return asAdmin(async (t) => {
+    const [filters, shops, tags] = await Promise.all([
+      listFilters(t),
+      t.tx
+        .select({ id: s.shops.id, code: s.shops.code, name: s.shops.name })
+        .from(s.shops)
+        .orderBy(asc(s.shops.name)),
+      t.tx
+        .select({ id: s.tags.id, name: s.tags.name, color: s.tags.color })
+        .from(s.tags)
+        .orderBy(asc(s.tags.name)),
+    ]);
+    return { filters, shops, tags };
   });
 }

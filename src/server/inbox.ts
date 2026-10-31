@@ -18,7 +18,14 @@ import * as s from "@/db/schema";
 import { canAssignOthers, canWorkTickets } from "@/domain/permissions";
 import { orderNumberToLookup, parseSearchQuery } from "@/domain/search";
 import type { TenantTx } from "@/db/tenant";
-import { isShopView, type InboxView, INBOX_VIEWS } from "@/domain/views";
+import {
+  INBOX_VIEWS,
+  isLabelView,
+  isShopView,
+  labelIdOf,
+  type InboxView,
+  type ListView,
+} from "@/domain/views";
 import { cache } from "react";
 import {
   commerceClients,
@@ -35,10 +42,14 @@ const WAITING: TicketStatus[] = ["pending_customer", "pending_third_party"];
 const DONE: TicketStatus[] = ["solved", "closed"];
 
 function viewCondition(
-  view: InboxView,
+  view: ListView,
   userId: string,
   shopIds: Record<string, string>,
 ): SQL {
+  // Label: alle tickets met dat label, ook gearchiveerde (zoals in Gmail).
+  if (isLabelView(view)) {
+    return sql`exists (select 1 from ${s.ticketTags} where ${s.ticketTags.ticketId} = ${s.tickets.id} and ${s.ticketTags.tagId} = ${labelIdOf(view)})`;
+  }
   if (isShopView(view)) {
     return and(
       eq(s.tickets.shopId, shopIds[view] ?? "00000000-0000-4000-8000-000000000000"),
@@ -80,9 +91,40 @@ export const getViewCounts = cache(async (): Promise<Record<InboxView, number>> 
   });
 });
 
+/** Labels met het aantal tickets dat nog iets nodig heeft (nieuw of open). */
+export const getLabelCounts = cache(async () => {
+  return asTenant(async ({ tx }) =>
+    tx
+      .select({
+        id: s.tags.id,
+        name: s.tags.name,
+        color: s.tags.color,
+        open: sql<number>`count(${s.tickets.id}) filter (where ${inArray(s.tickets.status, ACTIONABLE)})`.mapWith(
+          Number,
+        ),
+      })
+      .from(s.tags)
+      .leftJoin(s.ticketTags, eq(s.ticketTags.tagId, s.tags.id))
+      .leftJoin(s.tickets, eq(s.tickets.id, s.ticketTags.ticketId))
+      .groupBy(s.tags.id)
+      .orderBy(asc(s.tags.name)),
+  );
+});
+
+/** Naam en kleur van het label achter een labelweergave; null als het niet (meer) bestaat. */
+export async function getLabel(tagId: string) {
+  return asTenant(async ({ tx }) => {
+    const [tag] = await tx
+      .select({ id: s.tags.id, name: s.tags.name, color: s.tags.color })
+      .from(s.tags)
+      .where(eq(s.tags.id, tagId));
+    return tag ?? null;
+  });
+}
+
 export type TicketListItem = Awaited<ReturnType<typeof listTickets>>[number];
 
-export async function listTickets(view: InboxView) {
+export async function listTickets(view: ListView) {
   return asTenant(async (t, session) => {
     const shopIds = await shopIdsByCode(t);
     const rows = await t.tx
@@ -114,7 +156,7 @@ export async function listTickets(view: InboxView) {
     const ids = rows.map((r) => r.id);
     if (ids.length === 0) return [];
 
-    const [previews, drafts] = await Promise.all([
+    const [previews, drafts, tagRows] = await Promise.all([
       t.tx
         .selectDistinctOn([s.messages.ticketId], {
           ticketId: s.messages.ticketId,
@@ -128,14 +170,30 @@ export async function listTickets(view: InboxView) {
         .select({ ticketId: s.aiDrafts.ticketId })
         .from(s.aiDrafts)
         .where(and(inArray(s.aiDrafts.ticketId, ids), eq(s.aiDrafts.status, "pending"))),
+      t.tx
+        .select({
+          ticketId: s.ticketTags.ticketId,
+          id: s.tags.id,
+          name: s.tags.name,
+          color: s.tags.color,
+        })
+        .from(s.ticketTags)
+        .innerJoin(s.tags, eq(s.tags.id, s.ticketTags.tagId))
+        .where(inArray(s.ticketTags.ticketId, ids))
+        .orderBy(asc(s.tags.name)),
     ]);
     const previewBy = new Map(previews.map((p) => [p.ticketId, p.translated ?? p.body]));
     const draftSet = new Set(drafts.map((d) => d.ticketId));
+    const tagsBy = new Map<string, { id: string; name: string; color: string }[]>();
+    for (const { ticketId, ...tag } of tagRows) {
+      tagsBy.set(ticketId, [...(tagsBy.get(ticketId) ?? []), tag]);
+    }
 
     return rows.map((r) => ({
       ...r,
       preview: (previewBy.get(r.id) ?? "").replace(/\s+/g, " ").trim().slice(0, 140),
       hasDraft: draftSet.has(r.id),
+      tags: tagsBy.get(r.id) ?? [],
     }));
   });
 }

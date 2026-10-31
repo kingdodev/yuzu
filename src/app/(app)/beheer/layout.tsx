@@ -12,6 +12,7 @@ const SECTIONS: { title: string; links: [string, string][] }[] = [
       ["/beheer/gebruikers", "Gebruikers en rollen"],
       ["/beheer/teams", "Teams"],
       ["/beheer/labels", "Labels"],
+      ["/beheer/filters", "Filters"],
     ],
   },
   {

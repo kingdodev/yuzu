@@ -1,7 +1,7 @@
 import { Sparkles, UserRound } from "lucide-react";
 import type { TicketStatus } from "@/domain/tickets";
 import { contactLabel, INTENT_LABELS, shortTime } from "@/lib/format";
-import { Avatar, PriorityTag, ShopBadge, StatusPill } from "../ui";
+import { Avatar, PriorityTag, ShopBadge, StatusPill, TagChip } from "../ui";
 
 export type TicketRowData = {
   number?: number;
@@ -17,6 +17,7 @@ export type TicketRowData = {
   hasDraft?: boolean;
   /** Undefined = niet bekend in deze lijst (dan geen regel "eigenaar"). */
   assigneeName?: string | null;
+  tags?: { id: string; name: string; color: string }[];
 };
 
 /**
@@ -53,6 +54,9 @@ export function TicketRowBody({
               Concept klaar
             </span>
           )}
+          {t.tags?.map((tag) => (
+            <TagChip key={tag.id} name={tag.name} color={tag.color} />
+          ))}
           {urgent && (
             <span className="rounded-[4px] bg-alert-tint px-1.5 py-[1px] text-[11.5px] font-semibold text-alert">
               {t.priority === "urgent" ? "Spoed" : "Hoge prioriteit"}
