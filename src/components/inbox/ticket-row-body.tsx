@@ -34,7 +34,11 @@ export function TicketRowBody({
   showNumber?: boolean;
 }) {
   const unread = t.status === "new";
-  const urgent = t.priority === "high" || t.priority === "urgent";
+  const urgentText = t.priority === "urgent" ? "Spoed" : "Hoge prioriteit";
+  // Geen dubbel "Spoed" als het ticket ook het label met die naam heeft.
+  const urgent =
+    (t.priority === "high" || t.priority === "urgent") &&
+    !t.tags?.some((tag) => tag.name.toLowerCase() === urgentText.toLowerCase());
   const who = contactLabel(t.contactName, t.contactEmail);
   return (
     <div className="flex gap-3">
@@ -59,7 +63,7 @@ export function TicketRowBody({
           ))}
           {urgent && (
             <span className="rounded-[4px] bg-alert-tint px-1.5 py-[1px] text-[11.5px] font-semibold text-alert">
-              {t.priority === "urgent" ? "Spoed" : "Hoge prioriteit"}
+              {urgentText}
             </span>
           )}
           <time

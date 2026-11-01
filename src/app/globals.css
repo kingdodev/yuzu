@@ -377,12 +377,26 @@ body {
 .inbox:not(:has([data-ticket])) .inbox-detail {
   display: none;
 }
-/* Met een ticket open: alleen op heel brede schermen een smalle lijst ernaast. */
+/* Met een ticket open: weergaven alleen als je ze aanzet (knop in de actiebalk). */
+@media (min-width: 1024px) {
+  :root[data-views="open"] .inbox:has([data-ticket]) .inbox-views {
+    display: block;
+  }
+}
+/* En op heel brede schermen een smalle lijst ernaast; staan de weergaven er
+   ook, dan pas vanaf nog bredere schermen, zodat het gesprek ruimte houdt. */
 .inbox:has([data-ticket]) .inbox-list {
   display: none;
 }
 @media (min-width: 1536px) {
-  .inbox:has([data-ticket]) .inbox-list {
+  :root:not([data-views="open"]) .inbox:has([data-ticket]) .inbox-list {
+    display: block;
+    flex: 0 0 340px;
+    border-right: 1px solid var(--line);
+  }
+}
+@media (min-width: 1800px) {
+  :root[data-views="open"] .inbox:has([data-ticket]) .inbox-list {
     display: block;
     flex: 0 0 340px;
     border-right: 1px solid var(--line);

@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ViewsToggle } from "@/components/inbox/views-toggle";
 import { ArchiveButton } from "@/components/ticket/archive-button";
 import { ComposeButtons } from "@/components/ticket/compose-buttons";
 import { Composer } from "@/components/ticket/composer";
@@ -62,11 +63,12 @@ function TicketView({ detail, view }: { detail: TicketDetail; view: string }) {
     <div data-ticket className="flex h-full min-h-0 flex-col">
       {/* Actiebalk, zoals in moderne helpdesks. */}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line bg-panel px-4 py-2.5 lg:px-6">
+        <ViewsToggle />
         <Link
           href={`/inbox/${view}`}
           aria-label="Terug naar de lijst"
           title="Terug naar de lijst"
-          className="btn btn-quiet px-2 2xl:hidden"
+          className="btn btn-quiet px-2"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </Link>
