@@ -410,8 +410,8 @@ export async function bulkUpdateTickets(
           const { tag, added } = await addTagToTickets(t, ticketIds, action.tagId);
           const already = ticketIds.length - added;
           return (
-            `${tickets(added)} kregen het label ${tag.name}` +
-            (already > 0 ? `, ${already} hadden het al` : "")
+            `${tickets(added)} ${added === 1 ? "kreeg" : "kregen"} het label ${tag.name}` +
+            (already > 0 ? `, ${already} ${already === 1 ? "had" : "hadden"} het al` : "")
           );
         }
       }

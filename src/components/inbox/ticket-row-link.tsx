@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DragEvent, ReactNode } from "react";
-import { encodeDraggedTickets, TICKET_DRAG_TYPE } from "@/lib/ticket-drag";
+import {
+  encodeDraggedTickets,
+  endTicketDrag,
+  startTicketDrag,
+  TICKET_DRAG_TYPE,
+} from "@/lib/ticket-drag";
 import { useTicketSelection } from "./ticket-selection";
 
 export function TicketRowLink({
@@ -25,16 +30,18 @@ export function TicketRowLink({
   function onDragStart(e: DragEvent<HTMLAnchorElement>) {
     if (!selection) return;
     const ids = selection.dragIds(ticketId);
+    startTicketDrag(ids);
     e.dataTransfer.setData(TICKET_DRAG_TYPE, encodeDraggedTickets(ids));
     e.dataTransfer.effectAllowed = "copy";
     // Een eigen sleepbeeld: "3 tickets" in plaats van een doorzichtige kaart.
     const ghost = document.createElement("div");
     ghost.textContent = ids.length === 1 ? "1 ticket" : `${ids.length} tickets`;
     ghost.style.cssText =
-      "position:fixed;top:-100px;left:-100px;padding:6px 12px;border-radius:999px;background:var(--primary);color:#fff;font:600 13px/1.2 var(--font-sans);box-shadow:var(--pop-shadow)";
+      "position:fixed;top:0;left:0;z-index:-1;padding:6px 12px;border-radius:999px;background:var(--primary);color:#fff;font:600 13px/1.2 var(--font-sans);box-shadow:var(--pop-shadow)";
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, 12, 12);
-    requestAnimationFrame(() => ghost.remove());
+    // Safari maakt het sleepbeeld pas net na dit moment; daarna pas weghalen.
+    setTimeout(() => ghost.remove(), 0);
   }
 
   return (
@@ -42,6 +49,7 @@ export function TicketRowLink({
       href={href}
       draggable={Boolean(selection)}
       onDragStart={onDragStart}
+      onDragEnd={endTicketDrag}
       aria-current={active ? "page" : undefined}
       className={`relative block border-b border-line py-3 pr-4 transition-colors ${indent ? "pl-11" : "pl-4"} ${
         active

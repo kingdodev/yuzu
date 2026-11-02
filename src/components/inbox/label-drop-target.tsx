@@ -7,7 +7,13 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
-import { decodeDraggedTickets, TICKET_DRAG_TYPE } from "@/lib/ticket-drag";
+import {
+  decodeDraggedTickets,
+  draggedTickets,
+  endTicketDrag,
+  isTicketDrag,
+  TICKET_DRAG_TYPE,
+} from "@/lib/ticket-drag";
 import { bulkUpdateTickets } from "@/server/actions/tickets";
 
 /**
@@ -34,7 +40,7 @@ export function LabelDropTarget({
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const accepts = (e: DragEvent) => e.dataTransfer.types.includes(TICKET_DRAG_TYPE);
+  const accepts = (e: DragEvent) => isTicketDrag(e.dataTransfer?.types);
 
   function onDragOver(e: DragEvent<HTMLDivElement>) {
     if (!accepts(e)) return;
@@ -47,7 +53,9 @@ export function LabelDropTarget({
     setOver(false);
     if (!accepts(e)) return;
     e.preventDefault();
-    const ids = decodeDraggedTickets(e.dataTransfer.getData(TICKET_DRAG_TYPE));
+    const ids =
+      draggedTickets() ?? decodeDraggedTickets(e.dataTransfer.getData(TICKET_DRAG_TYPE));
+    endTicketDrag();
     if (ids.length === 0) return;
     start(async () => {
       const result = await bulkUpdateTickets({
@@ -67,7 +75,10 @@ export function LabelDropTarget({
       <div
         onDragOver={onDragOver}
         onDragEnter={onDragOver}
-        onDragLeave={() => setOver(false)}
+        onDragLeave={(e) => {
+          // Alleen echt weg als je het label verlaat, niet bij een onderdeel erin.
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
+        }}
         onDrop={onDrop}
         aria-busy={pending || undefined}
         className={`rounded-md transition-shadow ${

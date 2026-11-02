@@ -24,3 +24,25 @@ export function decodeDraggedTickets(raw: string | null | undefined): string[] {
     return [];
   }
 }
+
+// Welke tickets er nu in deze pagina gesleept worden. Safari en Firefox geven
+// eigen sleeptypes tijdens het slepen niet altijd door aan het doel; slepen en
+// neerzetten gebeurt in dezelfde pagina, dus onthouden we het hier zelf.
+let dragging: string[] | null = null;
+
+export function startTicketDrag(ids: readonly string[]) {
+  dragging = decodeDraggedTickets(encodeDraggedTickets(ids));
+}
+
+export function endTicketDrag() {
+  dragging = null;
+}
+
+export function draggedTickets(): string[] | null {
+  return dragging;
+}
+
+/** Sleept iemand tickets? Eerst wat we zelf onthielden, anders wat de browser meegeeft. */
+export function isTicketDrag(types: ArrayLike<string> | null | undefined): boolean {
+  return dragging !== null || Array.from(types ?? []).includes(TICKET_DRAG_TYPE);
+}
