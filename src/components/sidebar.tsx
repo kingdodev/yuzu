@@ -14,6 +14,7 @@ import { SHOP_VIEWS, VIEW_LABELS, type InboxView } from "@/domain/views";
 import { labelView } from "@/domain/views";
 import { getLabelCounts, getViewCounts, getVisibleShopCodes } from "@/server/inbox";
 import { canManage, getSession } from "@/server/session";
+import { LabelDropTarget } from "./inbox/label-drop-target";
 import { NavLink } from "./nav-link";
 import { ThemeSwitch } from "./theme-switch";
 import { ShopBadge, Skeleton } from "./ui";
@@ -88,14 +89,16 @@ async function ViewLinks() {
             Labels
           </h2>
           {labels.map((tag) => (
-            <NavLink key={tag.id} href={`/inbox/${labelView(tag.id)}`} count={tag.open}>
-              <span
-                aria-hidden
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background: TAG_DOT[tag.color] ?? TAG_DOT.gray }}
-              />
-              <span className="truncate">{tag.name}</span>
-            </NavLink>
+            <LabelDropTarget key={tag.id} tagId={tag.id} tagName={tag.name}>
+              <NavLink href={`/inbox/${labelView(tag.id)}`} count={tag.open}>
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: TAG_DOT[tag.color] ?? TAG_DOT.gray }}
+                />
+                <span className="truncate">{tag.name}</span>
+              </NavLink>
+            </LabelDropTarget>
           ))}
         </div>
       )}

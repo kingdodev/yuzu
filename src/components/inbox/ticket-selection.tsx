@@ -18,6 +18,8 @@ import {
 type Selection = {
   selected: ReadonlySet<string>;
   toggle: (id: string) => void;
+  /** Welke tickets je meesleept: alle aangevinkte als dit er één van is, anders alleen dit. */
+  dragIds: (id: string) => string[];
 };
 
 const SelectionContext = createContext<Selection | null>(null);
@@ -96,7 +98,17 @@ export function TicketSelection({
     "field w-auto min-w-0 flex-1 py-1.5 text-[13.5px] @2xl:w-44 @2xl:flex-none";
 
   return (
-    <SelectionContext.Provider value={enabled ? { selected, toggle } : null}>
+    <SelectionContext.Provider
+      value={
+        enabled
+          ? {
+              selected,
+              toggle,
+              dragIds: (id) => (current.includes(id) ? current : [id]),
+            }
+          : null
+      }
+    >
       <div className="flex h-full flex-col">
         <div className="border-b border-line bg-panel px-4 py-3">
           <div className="flex items-center gap-3">
@@ -252,4 +264,9 @@ export function TicketCheckbox({ id, label }: { id: string; label: string }) {
       className="h-4 w-4 shrink-0 accent-[var(--primary)]"
     />
   );
+}
+
+/** De selectie in de lijst; null voor meelezers (die mogen niets wijzigen). */
+export function useTicketSelection() {
+  return useContext(SelectionContext);
 }
